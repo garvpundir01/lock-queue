@@ -1,0 +1,954 @@
+<title>Lock Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* Layout: the migration on the left, what it does to a live table on the right,
+   then one card per statement carrying the rewrite. Graphite neutrals with a
+   flat indigo for structure; the four severity hues do the talking, since the
+   whole page is about how dangerous each line is. JetBrains Mono for all SQL,
+   Archivo for everything else. */
+:root {
+  color-scheme: light;
+
+  --ground:    #eceef2;
+  --surface:   #fafbfc;
+  --surface-2: #f1f3f7;
+  --ink:       #0f1419;
+  --ink-2:     #49525f;
+  --ink-3:     #7d8795;
+  --rule:      #dce0e7;
+  --rule-firm: #c2c8d2;
+  --accent:    #3b48a8;
+  --accent-wash: rgba(59, 72, 168, 0.09);
+
+  --critical:  #c7342c;
+  --crit-wash: rgba(199, 52, 44, 0.10);
+  --high:      #b36a0d;
+  --high-wash: rgba(179, 106, 13, 0.11);
+  --medium:    #8f7a12;
+  --med-wash:  rgba(143, 122, 18, 0.11);
+  --safe:      #2a7349;
+  --safe-wash: rgba(42, 115, 73, 0.10);
+
+  --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-body:    "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  --gutter: clamp(1rem, 3.5vw, 2.5rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground:    #0c0e12;
+    --surface:   #14171d;
+    --surface-2: #1a1e26;
+    --ink:       #e9ecf1;
+    --ink-2:     #9aa3b2;
+    --ink-3:     #6e7786;
+    --rule:      #242932;
+    --rule-firm: #353c48;
+    --accent:    #93a0f5;
+    --accent-wash: rgba(147, 160, 245, 0.13);
+    --critical:  #f0706a;
+    --crit-wash: rgba(240, 112, 106, 0.13);
+    --high:      #e3a046;
+    --high-wash: rgba(227, 160, 70, 0.13);
+    --medium:    #d4c052;
+    --med-wash:  rgba(212, 192, 82, 0.13);
+    --safe:      #5cb985;
+    --safe-wash: rgba(92, 185, 133, 0.13);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground:    #0c0e12;
+  --surface:   #14171d;
+  --surface-2: #1a1e26;
+  --ink:       #e9ecf1;
+  --ink-2:     #9aa3b2;
+  --ink-3:     #6e7786;
+  --rule:      #242932;
+  --rule-firm: #353c48;
+  --accent:    #93a0f5;
+  --accent-wash: rgba(147, 160, 245, 0.13);
+  --critical:  #f0706a;
+  --crit-wash: rgba(240, 112, 106, 0.13);
+  --high:      #e3a046;
+  --high-wash: rgba(227, 160, 70, 0.13);
+  --medium:    #d4c052;
+  --med-wash:  rgba(212, 192, 82, 0.13);
+  --safe:      #5cb985;
+  --safe-wash: rgba(92, 185, 133, 0.13);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: var(--gutter); padding-block: 0 4rem; }
+
+/* ------------------------------------------------------------ masthead */
+
+.masthead { display: grid; gap: 0.7rem; padding-block: clamp(2rem, 5vw, 3.25rem) 1.5rem; }
+.masthead h1 { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.lede { max-width: 66ch; color: var(--ink-2); font-size: clamp(0.96rem, 1.5vw, 1.06rem); }
+.lede b { color: var(--ink); font-weight: 600; }
+
+/* --------------------------------------------------------------- bars */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.4rem;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  margin-bottom: 1.25rem;
+}
+.ctl { display: flex; align-items: center; gap: 0.55rem; }
+.ctl label { font-size: 13px; color: var(--ink-2); }
+.ctl input[type="number"] {
+  font-family: var(--font-mono); font-size: 13px;
+  width: 9rem; padding: 0.32rem 0.5rem;
+  border: 1px solid var(--rule-firm); border-radius: 4px;
+  background: var(--surface-2); color: var(--ink);
+}
+.ctl .hint { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); }
+
+.btn {
+  font: inherit; font-size: 13px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--rule-firm); border-radius: 4px;
+  background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-solid { background: var(--accent); border-color: var(--accent); color: var(--ground); font-weight: 600; }
+.btn-solid:hover { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+
+/* --------------------------------------------------------------- grid */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1rem, 2.5vw, 1.75rem);
+  align-items: start;
+  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.pane { background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+.pane-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--rule); background: var(--surface-2);
+}
+.pane-head h2 { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em; }
+.pane-head .n { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+
+textarea#sql {
+  display: block; width: 100%; min-height: 19rem;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65;
+  padding: 0.85rem 0.9rem; border: 0; resize: vertical;
+  background: var(--surface); color: var(--ink);
+  tab-size: 2;
+}
+textarea#sql:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent-wash); }
+
+/* ------------------------------------------------------------- verdict */
+
+.verdict-body { padding: 0.95rem 1rem; display: grid; gap: 0.9rem; }
+
+.headline { display: grid; gap: 0.3rem; }
+.headline .tag {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3.6vw, 2rem); font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.05;
+}
+.headline .sub { font-size: 13.5px; color: var(--ink-2); }
+
+.v-critical .tag { color: var(--critical); }
+.v-high .tag     { color: var(--high); }
+.v-medium .tag   { color: var(--medium); }
+.v-low .tag      { color: var(--medium); }
+.v-safe .tag     { color: var(--safe); }
+
+.figures { display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; }
+.fig { display: grid; gap: 0.05rem; }
+.fig .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.fig .v { font-family: var(--font-mono); font-size: 1.05rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.chart svg { display: block; width: 100%; height: auto; }
+.chart-note { font-size: 12px; color: var(--ink-3); margin-top: 0.4rem; }
+
+/* ------------------------------------------------------------ findings */
+
+.section-head { display: grid; gap: 0.3rem; margin: 0 0 1rem; }
+.section-head h2 { font-size: clamp(1.1rem, 2.2vw, 1.3rem); font-weight: 600; letter-spacing: -0.015em; }
+.section-head p { font-size: 13.5px; color: var(--ink-2); max-width: 70ch; }
+
+.cards { display: grid; gap: 0.85rem; margin: 0 0 2rem; padding: 0; list-style: none; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--rule-firm);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.card[data-sev="critical"] { border-left-color: var(--critical); }
+.card[data-sev="high"]     { border-left-color: var(--high); }
+.card[data-sev="medium"]   { border-left-color: var(--medium); }
+.card[data-sev="low"]      { border-left-color: var(--rule-firm); }
+.card[data-sev="safe"]     { border-left-color: var(--safe); }
+
+.card-top { padding: 0.8rem 1rem; display: grid; gap: 0.5rem; }
+.card-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 0.7rem; }
+.card-title h3 { font-size: 0.98rem; font-weight: 600; }
+.card-title .where { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+
+.badges { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.badge {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.03em;
+  padding: 0.14rem 0.45rem; border-radius: 3px;
+  border: 1px solid var(--rule-firm); color: var(--ink-2); background: var(--surface-2);
+}
+.badge.lock-strong { border-color: var(--critical); color: var(--critical); background: var(--crit-wash); }
+.badge.lock-write  { border-color: var(--high); color: var(--high); background: var(--high-wash); }
+.badge.lock-weak   { border-color: var(--safe); color: var(--safe); background: var(--safe-wash); }
+
+.stmt {
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word;
+  padding: 0.5rem 0.6rem; border-radius: 3px;
+  background: var(--surface-2); color: var(--ink-2);
+  max-height: 7rem; overflow-y: auto;
+}
+.why { font-size: 13.5px; color: var(--ink-2); }
+.blocks { font-size: 12.5px; color: var(--ink-2); }
+.blocks b { color: var(--ink); font-weight: 600; }
+
+.fix { border-top: 1px solid var(--rule); background: var(--surface-2); padding: 0.75rem 1rem; display: grid; gap: 0.5rem; }
+.fix-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.fix-head h4 { margin: 0; font-size: 12px; font-weight: 600; color: var(--safe); font-family: var(--font-display); }
+.fix pre {
+  margin: 0; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+  padding: 0.6rem 0.7rem; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--surface); color: var(--ink);
+  overflow-x: auto;
+}
+.fix .note { font-size: 12.5px; color: var(--ink-3); }
+
+.script-finding { border-left-width: 3px; }
+.script-finding .fix pre { background: var(--surface); }
+
+.empty { padding: 1.4rem 1rem; text-align: center; color: var(--ink-3); font-size: 13.5px; background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; }
+
+.said { font-size: 12px; color: var(--safe); font-family: var(--font-mono); }
+
+footer { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); display: grid; gap: 0.6rem; max-width: 74ch; }
+footer p { font-size: 13px; color: var(--ink-2); }
+footer b { color: var(--ink); }
+
+@media (max-width: 880px) {
+  .split { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>Lock Queue</h1>
+    <p class="lede">
+      Reads a PostgreSQL migration and works out what it does to a table that is being
+      used. The outage nobody plans for is not a slow migration — it is the queue.
+      <b>Your ALTER waits for the query already running, and every query that arrives
+      after it waits behind the ALTER</b>, including plain SELECTs. A 200ms migration
+      stuck behind one slow report blocks the table for as long as that report runs.
+    </p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl">
+      <label for="rows">Rows in the largest affected table</label>
+      <input type="number" id="rows" min="0" step="100000" value="12000000">
+    </div>
+    <span class="ctl hint" id="rows-hint"></span>
+    <div class="ctl" style="margin-left:auto">
+      <button class="btn" type="button" id="load-risky">Load a risky migration</button>
+      <button class="btn" type="button" id="load-safe">Load its safe rewrite</button>
+    </div>
+  </div>
+
+  <div class="split">
+    <section class="pane">
+      <div class="pane-head">
+        <h2>Migration</h2>
+        <span class="n" id="stmt-count"></span>
+      </div>
+      <textarea id="sql" spellcheck="false" aria-label="PostgreSQL migration"></textarea>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <h2>Effect on a live table</h2>
+        <span class="n" id="worst-lock"></span>
+      </div>
+      <div class="verdict-body">
+        <div class="headline" id="headline">
+          <span class="tag" id="verdict-tag">—</span>
+          <span class="sub" id="verdict-sub"></span>
+        </div>
+        <div class="figures" id="figures"></div>
+        <div class="chart" id="chart"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="section-head">
+    <h2>What each statement does</h2>
+    <p>Every statement that touches an existing table, the lock it takes, and how long it
+      holds it at the row count above. Where there is a safer way to get the same result,
+      the rewrite is given in full.</p>
+  </div>
+  <ul class="cards" id="cards"></ul>
+
+  <div class="section-head">
+    <h2>Problems with the script as a whole</h2>
+    <p>Faults that come from how the statements are arranged rather than from any one of them.</p>
+  </div>
+  <ul class="cards" id="script-cards"></ul>
+
+  <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-solid" type="button" id="copy-safe">Copy the safe migration</button>
+    <span class="said" id="said" role="status"></span>
+  </div>
+
+  <footer>
+    <p><b>Estimates, not predictions.</b> Durations come from the row count at roughly
+      500k rows/sec for a rewrite, 2M for a scan and 1M for an index build. Row width,
+      disk and cache move these a lot. Use them to tell "instant" from "minutes", not to
+      plan a maintenance window to the second.</p>
+    <p><b>Pattern-based, not a parser.</b> It recognises the shapes migrations actually
+      take. Anything it does not recognise is listed and left unjudged rather than
+      guessed at.</p>
+    <p><b>Postgres 11 and later assumed.</b> Adding a column with a constant default is
+      catalog-only from 11, and <span style="font-family:var(--font-mono);font-size:12px">SET NOT NULL</span>
+      can lean on a validated CHECK from 12.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+"use strict";
+
+/* ===================== engine (mirrors src/engine.js) ===================== */
+
+var LOCKS = {
+  "ACCESS EXCLUSIVE":      { rank: 8, blocks: "everything, including SELECT", note: "Nothing can read or write the table while this is held." },
+  "SHARE ROW EXCLUSIVE":   { rank: 6, blocks: "all writes and other schema changes", note: "Reads continue. INSERT, UPDATE and DELETE wait." },
+  "SHARE":                 { rank: 5, blocks: "all writes", note: "Reads continue. Writes wait for the whole build." },
+  "SHARE UPDATE EXCLUSIVE":{ rank: 4, blocks: "other schema changes and VACUUM", note: "Reads and writes both continue normally." },
+  "ROW EXCLUSIVE":         { rank: 3, blocks: "nothing that matters here", note: "The ordinary write lock." },
+  "ACCESS SHARE":          { rank: 1, blocks: "nothing", note: "The ordinary read lock." }
+};
+
+function splitStatements(sql) {
+  var out = [], buf = "", line = 1, startLine = 1, i = 0;
+  function push() {
+    var text = buf.trim();
+    if (text) {
+      var leading = buf.match(/^\s*/)[0];
+      var skipped = (leading.match(/\n/g) || []).length;
+      out.push({ sql: text, line: startLine + skipped });
+    }
+    buf = ""; startLine = line;
+  }
+  while (i < sql.length) {
+    var c = sql[i], n2 = sql.slice(i, i + 2);
+    if (c === "\n") { line++; buf += c; i++; continue; }
+    if (n2 === "--") { var e = sql.indexOf("\n", i); var s1 = e === -1 ? sql.length : e; buf += sql.slice(i, s1); i = s1; continue; }
+    if (n2 === "/*") { var e2 = sql.indexOf("*/", i + 2); var s2 = e2 === -1 ? sql.length : e2 + 2;
+      for (var k0 = i; k0 < s2; k0++) if (sql[k0] === "\n") line++; buf += sql.slice(i, s2); i = s2; continue; }
+    if (c === "'") { var k = i + 1;
+      while (k < sql.length) {
+        if (sql[k] === "'" && sql[k + 1] === "'") { k += 2; continue; }
+        if (sql[k] === "'") { k++; break; }
+        if (sql[k] === "\n") line++; k++;
+      }
+      buf += sql.slice(i, k); i = k; continue; }
+    if (c === '"') { var k2 = i + 1; while (k2 < sql.length && sql[k2] !== '"') { if (sql[k2] === "\n") line++; k2++; }
+      buf += sql.slice(i, k2 + 1); i = k2 + 1; continue; }
+    if (c === "$") {
+      var m = sql.slice(i).match(/^\$([A-Za-z_][A-Za-z0-9_]*)?\$/);
+      if (m) { var tag = m[0]; var e3 = sql.indexOf(tag, i + tag.length); var s3 = e3 === -1 ? sql.length : e3 + tag.length;
+        for (var k3 = i; k3 < s3; k3++) if (sql[k3] === "\n") line++; buf += sql.slice(i, s3); i = s3; continue; }
+    }
+    if (c === ";") { push(); i++; continue; }
+    buf += c; i++;
+  }
+  push();
+  return out;
+}
+
+function normalize(stmt) {
+  return stmt.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+}
+
+var VOLATILE = /\b(NOW|CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|CLOCK_TIMESTAMP|TIMEOFDAY|RANDOM|GEN_RANDOM_UUID|UUID_GENERATE_V[14]|NEXTVAL)\b/;
+
+function tableOf(norm, original) {
+  var pats = [
+    /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:CONCURRENTLY\s+)?(?:IF\s+NOT\s+EXISTS\s+)?(?:[A-Z0-9_."]+\s+)?ON\s+(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?([A-Z0-9_."]+)/,
+    /TRUNCATE\s+(?:TABLE\s+)?(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /(?:UPDATE|DELETE\s+FROM)\s+(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /VACUUM\s+(?:FULL\s+)?(?:ANALYZE\s+)?([A-Z0-9_."]+)/,
+    /CLUSTER\s+(?:VERBOSE\s+)?([A-Z0-9_."]+)/,
+    /REINDEX\s+(?:TABLE|INDEX)\s+(?:CONCURRENTLY\s+)?([A-Z0-9_."]+)/,
+    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Z0-9_."]+)/
+  ];
+  for (var i = 0; i < pats.length; i++) {
+    var m = norm.match(pats[i]);
+    if (m) { var idx = original.toUpperCase().indexOf(m[1]); return idx === -1 ? m[1].toLowerCase() : original.slice(idx, idx + m[1].length); }
+  }
+  return null;
+}
+function columnOf(norm, original, re) {
+  var m = norm.match(re); if (!m) return null;
+  var idx = original.toUpperCase().indexOf(m[1]);
+  return idx === -1 ? m[1].toLowerCase() : original.slice(idx, idx + m[1].length);
+}
+function q(name) { return name ? name.replace(/"/g, "") : "table"; }
+
+function classify(stmt) {
+  var original = stmt.sql, norm = normalize(original), table = tableOf(norm, original), t = q(table);
+  var base = { table: table, raw: original, line: stmt.line };
+
+  if (/^(BEGIN|START TRANSACTION)\b/.test(norm)) return Object.assign({}, base, { op: "BEGIN", lock: null, work: "none", severity: "info", title: "Transaction begins" });
+  if (/^(COMMIT|END)\b/.test(norm)) return Object.assign({}, base, { op: "COMMIT", lock: null, work: "none", severity: "info", title: "Transaction commits" });
+  if (/^ROLLBACK\b/.test(norm)) return Object.assign({}, base, { op: "ROLLBACK", lock: null, work: "none", severity: "info", title: "Rollback" });
+  if (/^SET\s+LOCK_TIMEOUT/.test(norm)) return Object.assign({}, base, { op: "SET lock_timeout", lock: null, work: "none", severity: "safe", title: "Sets a lock timeout", mechanism: "Caps how long this session waits for a lock, which is what stops a blocked migration queueing traffic behind it." });
+  if (/^SET\b/.test(norm)) return Object.assign({}, base, { op: "SET", lock: null, work: "none", severity: "safe", title: "Session setting" });
+
+  if (/^CREATE\s+(UNIQUE\s+)?INDEX/.test(norm)) {
+    if (/\bCONCURRENTLY\b/.test(norm)) {
+      return Object.assign({}, base, { op: "CREATE INDEX CONCURRENTLY", lock: "SHARE UPDATE EXCLUSIVE", work: "build-index", severity: "safe",
+        title: "Builds the index without blocking",
+        mechanism: "Two passes over the table while reads and writes continue. Slower in wall-clock terms than a plain build, which is the trade you want.",
+        needsOwnTransaction: true });
+    }
+    return Object.assign({}, base, { op: "CREATE INDEX", lock: "SHARE", work: "build-index", severity: "high",
+      title: "Blocks every write until the index is built",
+      mechanism: "A plain CREATE INDEX takes a SHARE lock for the whole build. Reads continue; every INSERT, UPDATE and DELETE on this table waits until it finishes.",
+      fix: { title: "Build it concurrently instead",
+        sql: original.replace(/CREATE\s+(UNIQUE\s+)?INDEX/i, function (m) { return m + " CONCURRENTLY"; }),
+        note: "CREATE INDEX CONCURRENTLY cannot run inside a transaction block, so this has to sit outside BEGIN/COMMIT. If it fails it leaves an invalid index behind — drop it and retry." } });
+  }
+
+  if (/^DROP\s+INDEX/.test(norm)) {
+    if (/\bCONCURRENTLY\b/.test(norm)) return Object.assign({}, base, { op: "DROP INDEX CONCURRENTLY", lock: "SHARE UPDATE EXCLUSIVE", work: "catalog", severity: "safe", title: "Drops the index without blocking", needsOwnTransaction: true });
+    return Object.assign({}, base, { op: "DROP INDEX", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium",
+      title: "Takes the strongest lock, briefly",
+      mechanism: "The drop itself is fast, but it needs ACCESS EXCLUSIVE to get it. Acquiring that on a busy table is where the queue forms.",
+      fix: { title: "Drop it concurrently", sql: original.replace(/DROP\s+INDEX/i, "DROP INDEX CONCURRENTLY"), note: "Cannot run inside a transaction block." } });
+  }
+
+  if (/^ALTER\s+TABLE/.test(norm)) {
+    if (/\bADD\s+(COLUMN\s+)?/.test(norm) && !/\bADD\s+CONSTRAINT\b/.test(norm)) {
+      var col = columnOf(norm, original, /ADD\s+(?:COLUMN\s+)?(?:IF\s+NOT\s+EXISTS\s+)?([A-Z0-9_."]+)/);
+      var hasDefault = /\bDEFAULT\b/.test(norm);
+      var volatileDefault = hasDefault && VOLATILE.test(norm);
+      var unique = /\bUNIQUE\b/.test(norm);
+      var notNull = /\bNOT\s+NULL\b/.test(norm);
+
+      if (volatileDefault) {
+        return Object.assign({}, base, { op: "ADD COLUMN (volatile default)", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+          title: "Rewrites every row in the table",
+          mechanism: "A constant default is stored once in the catalog and costs nothing. A volatile default like now() or gen_random_uuid() has to be evaluated per row, so Postgres rewrites the whole table while holding ACCESS EXCLUSIVE.",
+          fix: { title: "Add the column, then the default, then backfill",
+            sql: ["ALTER TABLE " + t + " ADD COLUMN " + q(col) + " <type>;",
+                  "ALTER TABLE " + t + " ALTER COLUMN " + q(col) + " SET DEFAULT <volatile expression>;",
+                  "",
+                  "-- Backfill in batches so no single statement holds a long lock:",
+                  "UPDATE " + t + " SET " + q(col) + " = <volatile expression>",
+                  "WHERE " + q(col) + " IS NULL AND id IN (SELECT id FROM " + t + " WHERE " + q(col) + " IS NULL LIMIT 5000);",
+                  "-- repeat until no rows are updated"].join("\n"),
+            note: "New rows get the default immediately. Existing rows fill in over many short transactions instead of one long one." } });
+      }
+      if (unique) {
+        return Object.assign({}, base, { op: "ADD COLUMN UNIQUE", lock: "ACCESS EXCLUSIVE", work: "build-index", severity: "critical",
+          title: "Builds a unique index while blocking everything",
+          mechanism: "UNIQUE on a new column creates an index, and it is built under the ACCESS EXCLUSIVE lock the ALTER already holds.",
+          fix: { title: "Add the column, then build the index concurrently",
+            sql: ["ALTER TABLE " + t + " ADD COLUMN " + q(col) + " <type>;", "",
+                  "CREATE UNIQUE INDEX CONCURRENTLY " + t + "_" + q(col) + "_key ON " + t + " (" + q(col) + ");",
+                  "ALTER TABLE " + t + " ADD CONSTRAINT " + t + "_" + q(col) + "_key UNIQUE USING INDEX " + t + "_" + q(col) + "_key;"].join("\n"),
+            note: "ADD CONSTRAINT ... USING INDEX adopts the index you already built instead of building a new one." } });
+      }
+      if (notNull && !hasDefault) {
+        return Object.assign({}, base, { op: "ADD COLUMN NOT NULL", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+          title: "Fails outright on a table with rows",
+          mechanism: "NOT NULL with no default has nothing to put in existing rows. On a non-empty table this errors, and the migration dies partway through.",
+          fix: { title: "Give it a default, or add it nullable and tighten later",
+            sql: "ALTER TABLE " + t + " ADD COLUMN " + q(col) + " <type> NOT NULL DEFAULT <constant>;",
+            note: "Since Postgres 11 a constant default is a catalog-only change, so this stays fast at any table size." } });
+      }
+      return Object.assign({}, base, { op: "ADD COLUMN", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "low",
+        title: "Catalog-only, but still needs the strongest lock",
+        mechanism: hasDefault
+          ? "A constant default is stored once in the catalog, so Postgres 11 and later do not rewrite the table. The work is instant; getting the lock is the only risk."
+          : "Adding a nullable column with no default touches only the catalog. The work is instant; getting the lock is the only risk." });
+    }
+
+    if (/\bALTER\s+(COLUMN\s+)?[A-Z0-9_."]+\s+(SET\s+DATA\s+)?TYPE\b/.test(norm)) {
+      var colT = columnOf(norm, original, /ALTER\s+(?:COLUMN\s+)?([A-Z0-9_."]+)\s+(?:SET\s+DATA\s+)?TYPE/);
+      var safeWiden = /TYPE\s+TEXT\b/.test(norm) || /TYPE\s+VARCHAR\s*(\(|$)/.test(norm);
+      return Object.assign({}, base, { op: "ALTER COLUMN TYPE", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+        title: safeWiden ? "Usually a rewrite, occasionally free" : "Rewrites every row in the table",
+        mechanism: safeWiden
+          ? "Widening varchar(n) to a larger varchar or to text is catalog-only. Any other type change rewrites the table under ACCESS EXCLUSIVE, and indexes on the column are rebuilt too."
+          : "Changing a column type rewrites every row and rebuilds every index on it, all while holding ACCESS EXCLUSIVE. int to bigint is the usual trap: it looks like a widening but it is a full rewrite.",
+        fix: { title: "Move to a new column in steps",
+          sql: ["ALTER TABLE " + t + " ADD COLUMN " + q(colT) + "_new <newtype>;", "",
+                "-- Backfill in batches, then keep the two in step:",
+                "UPDATE " + t + " SET " + q(colT) + "_new = " + q(colT) + "::<newtype> WHERE " + q(colT) + "_new IS NULL;", "",
+                "-- Once backfilled and the application writes both, swap the names:",
+                "ALTER TABLE " + t + " RENAME COLUMN " + q(colT) + " TO " + q(colT) + "_old;",
+                "ALTER TABLE " + t + " RENAME COLUMN " + q(colT) + "_new TO " + q(colT) + ";"].join("\n"),
+          note: "Long, but every step is short. The alternative holds the table for the length of a full rewrite." } });
+    }
+
+    if (/\bALTER\s+(COLUMN\s+)?[A-Z0-9_."]+\s+SET\s+NOT\s+NULL\b/.test(norm)) {
+      var colN = columnOf(norm, original, /ALTER\s+(?:COLUMN\s+)?([A-Z0-9_."]+)\s+SET\s+NOT\s+NULL/);
+      var cname = t + "_" + q(colN) + "_not_null";
+      return Object.assign({}, base, { op: "SET NOT NULL", lock: "ACCESS EXCLUSIVE", work: "scan", severity: "high",
+        title: "Scans the whole table holding the strongest lock",
+        mechanism: "Postgres has to prove no row is null, and it does that with a sequential scan while holding ACCESS EXCLUSIVE.",
+        fix: { title: "Prove it with a NOT VALID check first",
+          sql: ["ALTER TABLE " + t + " ADD CONSTRAINT " + cname + " CHECK (" + q(colN) + " IS NOT NULL) NOT VALID;",
+                "ALTER TABLE " + t + " VALIDATE CONSTRAINT " + cname + ";",
+                "ALTER TABLE " + t + " ALTER COLUMN " + q(colN) + " SET NOT NULL;",
+                "ALTER TABLE " + t + " DROP CONSTRAINT " + cname + ";"].join("\n"),
+          note: "VALIDATE scans under SHARE UPDATE EXCLUSIVE, so reads and writes continue. Postgres 12 and later then accept SET NOT NULL instantly, because the validated constraint is already proof." } });
+    }
+
+    if (/\bADD\s+CONSTRAINT\b/.test(norm) || /\bADD\s+(FOREIGN\s+KEY|CHECK|UNIQUE|PRIMARY\s+KEY)\b/.test(norm)) {
+      var notValid = /\bNOT\s+VALID\b/.test(norm);
+      var cn = columnOf(norm, original, /ADD\s+CONSTRAINT\s+([A-Z0-9_."]+)/) || "constraint_name";
+
+      if (/\bFOREIGN\s+KEY\b/.test(norm)) {
+        if (notValid) return Object.assign({}, base, { op: "ADD FOREIGN KEY NOT VALID", lock: "SHARE ROW EXCLUSIVE", work: "catalog", severity: "safe", title: "Added without validating", mechanism: "New and changed rows are checked from now on; existing rows are not scanned. Validate separately." });
+        return Object.assign({}, base, { op: "ADD FOREIGN KEY", lock: "SHARE ROW EXCLUSIVE", work: "scan", severity: "high",
+          title: "Blocks writes on both tables while it scans",
+          mechanism: "Adding a validated foreign key scans this table and takes a lock on the referenced table too. Writes to either one wait.",
+          fix: { title: "Add it NOT VALID, then validate",
+            sql: [original.trim().replace(/;?\s*$/, "") + " NOT VALID;", "", "ALTER TABLE " + t + " VALIDATE CONSTRAINT " + q(cn) + ";"].join("\n"),
+            note: "The first statement is instant. VALIDATE takes only SHARE UPDATE EXCLUSIVE, so writes continue while it scans." } });
+      }
+      if (/\bCHECK\b/.test(norm)) {
+        if (notValid) return Object.assign({}, base, { op: "ADD CHECK NOT VALID", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "safe", title: "Added without scanning", mechanism: "Enforced for new rows only until validated." });
+        return Object.assign({}, base, { op: "ADD CHECK", lock: "ACCESS EXCLUSIVE", work: "scan", severity: "high",
+          title: "Scans the table under the strongest lock",
+          mechanism: "A validated CHECK constraint must be proven against every existing row before the ALTER returns.",
+          fix: { title: "Add it NOT VALID, then validate",
+            sql: [original.trim().replace(/;?\s*$/, "") + " NOT VALID;", "", "ALTER TABLE " + t + " VALIDATE CONSTRAINT " + q(cn) + ";"].join("\n") } });
+      }
+      if (/\bUSING\s+INDEX\b/.test(norm)) return Object.assign({}, base, { op: "ADD CONSTRAINT USING INDEX", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "safe", title: "Adopts an index you already built", mechanism: "No index build happens here, so the lock is held only for a catalog update." });
+      if (/\b(UNIQUE|PRIMARY\s+KEY)\b/.test(norm)) {
+        var colU = columnOf(norm, original, /(?:UNIQUE|PRIMARY\s+KEY)\s*\(\s*([A-Z0-9_."]+)/) || "col";
+        return Object.assign({}, base, { op: "ADD UNIQUE / PRIMARY KEY", lock: "ACCESS EXCLUSIVE", work: "build-index", severity: "critical",
+          title: "Builds an index while blocking everything",
+          mechanism: "A UNIQUE or PRIMARY KEY constraint needs a unique index, and it is built while ACCESS EXCLUSIVE is held.",
+          fix: { title: "Build the index concurrently, then adopt it",
+            sql: ["CREATE UNIQUE INDEX CONCURRENTLY " + t + "_" + q(colU) + "_key ON " + t + " (" + q(colU) + ");", "",
+                  "ALTER TABLE " + t + " ADD CONSTRAINT " + q(cn) + " UNIQUE USING INDEX " + t + "_" + q(colU) + "_key;"].join("\n"),
+            note: "The concurrent build does the slow part without blocking; adopting it is a catalog update." } });
+      }
+      return Object.assign({}, base, { op: "ADD CONSTRAINT", lock: "ACCESS EXCLUSIVE", work: "scan", severity: "medium", title: "Constraint added under the strongest lock" });
+    }
+
+    if (/\bVALIDATE\s+CONSTRAINT\b/.test(norm)) return Object.assign({}, base, { op: "VALIDATE CONSTRAINT", lock: "SHARE UPDATE EXCLUSIVE", work: "scan", severity: "safe", title: "Scans without blocking reads or writes", mechanism: "This is the half of the two-step that does the work, and it deliberately takes a weak lock." });
+
+    if (/\bDROP\s+(COLUMN|CONSTRAINT)\b/.test(norm)) {
+      var isCol = /\bDROP\s+COLUMN\b/.test(norm);
+      return Object.assign({}, base, { op: isCol ? "DROP COLUMN" : "DROP CONSTRAINT", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium",
+        title: isCol ? "Instant, and irreversible for any code still reading it" : "Instant catalog change",
+        mechanism: isCol
+          ? "Dropping a column only marks it dead in the catalog, so it is fast. The risk is deployment order: any running copy of the application that still selects this column starts erroring the moment this commits."
+          : "Catalog-only. The lock is held briefly.",
+        fix: isCol ? { title: "Ship the code that stops using it first",
+          sql: ["-- 1. Deploy application code that no longer references the column.",
+                "-- 2. Wait for every old process to drain.",
+                "-- 3. Then: " + original.trim()].join("\n"),
+          note: "Never in the same release as the code change. A column you dropped cannot be un-dropped with its data." } : undefined });
+    }
+
+    if (/\bRENAME\b/.test(norm)) {
+      return Object.assign({}, base, { op: "RENAME", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium",
+        title: "Instant, and breaks running code the moment it commits",
+        mechanism: "A rename is a catalog update, so it is fast. But every running process still using the old name starts failing immediately, and there is no window where both names work.",
+        fix: { title: "Add the new name alongside, then retire the old one",
+          sql: ["-- Renames cannot be done safely in one step while code is running.",
+                "-- Add a new column, write to both, migrate readers, then drop the old one."].join("\n") } });
+    }
+
+    if (/\bSET\s+DEFAULT\b|\bDROP\s+DEFAULT\b|\bDROP\s+NOT\s+NULL\b/.test(norm))
+      return Object.assign({}, base, { op: "SET/DROP DEFAULT or DROP NOT NULL", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "low", title: "Catalog-only, but still takes the strongest lock", mechanism: "The change itself is instant. Acquiring ACCESS EXCLUSIVE on a busy table is the only exposure." });
+
+    return Object.assign({}, base, { op: "ALTER TABLE", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium", title: "Takes the strongest lock" });
+  }
+
+  if (/^VACUUM\s+FULL/.test(norm)) return Object.assign({}, base, { op: "VACUUM FULL", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+    title: "Rewrites the table and blocks everything for the duration",
+    mechanism: "VACUUM FULL writes a whole new copy of the table and needs twice the disk space. Nothing can read or write it meanwhile.",
+    fix: { title: "Use a concurrent repack instead", sql: "-- pg_repack reclaims space without holding an exclusive lock for the whole rewrite.", note: "Plain VACUUM (no FULL) does not block and is usually what was wanted." } });
+  if (/^CLUSTER\b/.test(norm)) return Object.assign({}, base, { op: "CLUSTER", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical", title: "Rewrites the table and blocks everything", mechanism: "CLUSTER physically reorders the table under ACCESS EXCLUSIVE." });
+  if (/^REINDEX/.test(norm)) {
+    return /\bCONCURRENTLY\b/.test(norm)
+      ? Object.assign({}, base, { op: "REINDEX CONCURRENTLY", lock: "SHARE UPDATE EXCLUSIVE", work: "build-index", severity: "safe", title: "Rebuilds without blocking" })
+      : Object.assign({}, base, { op: "REINDEX", lock: "ACCESS EXCLUSIVE", work: "build-index", severity: "critical", title: "Blocks everything while the index rebuilds",
+          fix: { title: "Rebuild concurrently", sql: original.replace(/REINDEX\s+(TABLE|INDEX)/i, "REINDEX $1 CONCURRENTLY") } });
+  }
+  if (/^TRUNCATE/.test(norm)) return Object.assign({}, base, { op: "TRUNCATE", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "critical", title: "Deletes every row, and cannot be undone", mechanism: "Fast, exclusive, and irreversible outside a transaction you are prepared to roll back." });
+  if (/^DROP\s+TABLE/.test(norm)) return Object.assign({}, base, { op: "DROP TABLE", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "critical", title: "Removes the table and its data", mechanism: "Irreversible. Any running code touching it fails immediately." });
+
+  if (/^(UPDATE|DELETE)\b/.test(norm)) {
+    var hasWhere = /\bWHERE\b/.test(norm);
+    var limited = /\bLIMIT\b|\bIN\s*\(\s*SELECT\b/.test(norm);
+    if (!hasWhere) {
+      return Object.assign({}, base, { op: norm.indexOf("UPDATE") === 0 ? "UPDATE (no WHERE)" : "DELETE (no WHERE)",
+        lock: "ROW EXCLUSIVE", work: "rows", severity: "high",
+        title: "Touches every row in one transaction",
+        mechanism: "Row locks are held until commit, so a single statement over the whole table blocks any writer touching those rows for its full duration, and leaves dead tuples behind.",
+        fix: { title: "Work in batches",
+          sql: ["-- Repeat until no rows are affected:",
+                (norm.indexOf("UPDATE") === 0 ? "UPDATE " : "DELETE FROM ") + t,
+                "WHERE id IN (SELECT id FROM " + t + " WHERE <condition> LIMIT 5000);"].join("\n"),
+          note: "Each batch commits on its own, so locks are short and autovacuum can keep up." } });
+    }
+    return Object.assign({}, base, { op: norm.indexOf("UPDATE") === 0 ? "UPDATE" : "DELETE", lock: "ROW EXCLUSIVE", work: "rows", severity: limited ? "safe" : "low", title: limited ? "Batched write" : "Filtered write", mechanism: "Holds row locks until commit." });
+  }
+
+  if (/^CREATE\s+TABLE/.test(norm)) return Object.assign({}, base, { op: "CREATE TABLE", lock: null, work: "none", severity: "safe", title: "Creates a new table", mechanism: "Nothing is reading it yet, so there is nothing to block." });
+
+  return Object.assign({}, base, { op: "OTHER", lock: null, work: "none", severity: "info", title: "Not recognised", mechanism: "Lock Queue did not recognise this statement, so it is reported but not judged." });
+}
+
+var ROWS_PER_SEC = { rewrite: 500000, scan: 2000000, "build-index": 1000000, rows: 200000 };
+function estimateSeconds(work, rows) {
+  var rate = ROWS_PER_SEC[work];
+  if (!rate || !isFinite(rows) || rows <= 0) return null;
+  return rows / rate;
+}
+function describeDuration(seconds) {
+  if (seconds === null) return "instant";
+  if (seconds < 1) return "under a second";
+  if (seconds < 60) { var s = Math.max(1, Math.round(seconds)); return "about " + s + " second" + (s === 1 ? "" : "s"); }
+  var mins = seconds / 60;
+  if (mins < 60) { var m = Math.round(mins); return "about " + m + " minute" + (m === 1 ? "" : "s"); }
+  return "about " + (mins / 60).toFixed(1) + " hours";
+}
+
+var SEV_RANK = { critical: 4, high: 3, medium: 2, low: 1, safe: 0, info: 0 };
+
+function analyze(sql, opts) {
+  opts = opts || {};
+  var rows = isFinite(opts.rows) ? opts.rows : 1000000;
+  var statements = splitStatements(sql).map(function (s) {
+    var c = classify(s);
+    var seconds = estimateSeconds(c.work, rows);
+    return Object.assign({}, c, { seconds: seconds, duration: describeDuration(seconds), holdsLock: c.lock ? LOCKS[c.lock] : null });
+  });
+
+  var script = [];
+  var depth = 0;
+  statements.forEach(function (s) {
+    if (s.op === "BEGIN") depth++;
+    else if (s.op === "COMMIT" || s.op === "ROLLBACK") depth = Math.max(0, depth - 1);
+    else if (s.needsOwnTransaction && depth > 0) {
+      script.push({ id: "txn:concurrent", severity: "critical",
+        title: s.op + " cannot run inside a transaction",
+        detail: "Line " + s.line + " uses CONCURRENTLY inside an explicit BEGIN block. Postgres rejects this outright, so the migration fails at that statement.",
+        fix: "Move it outside BEGIN/COMMIT, or run it as its own migration step." });
+    }
+  });
+
+  var takesStrong = statements.some(function (s) { return s.lock && LOCKS[s.lock].rank >= 5; });
+  var setsTimeout = statements.some(function (s) { return s.op === "SET lock_timeout"; });
+  if (takesStrong && !setsTimeout) {
+    script.push({ id: "lock:no-timeout", severity: "high",
+      title: "No lock_timeout, so a blocked migration takes the table down with it",
+      detail: "This is the failure people do not see coming. Your ALTER waits behind whatever long query is already running, and every query arriving after it queues behind the ALTER — including plain SELECTs. A migration that would have taken 200ms blocks the table for as long as that one slow query runs.",
+      fix: "SET lock_timeout = '3s';\nSET statement_timeout = '30s';\n\n-- With these set, the migration gives up instead of queueing traffic behind it.\n-- Retry it rather than letting it wait." });
+  }
+
+  var inTxn = false, strongInTxn = [];
+  statements.forEach(function (s) {
+    if (s.op === "BEGIN") { inTxn = true; strongInTxn = []; return; }
+    if (s.op === "COMMIT" || s.op === "ROLLBACK") {
+      if (inTxn && strongInTxn.length > 1) {
+        script.push({ id: "txn:accumulating", severity: "high",
+          title: strongInTxn.length + " strong locks held together until COMMIT",
+          detail: "A lock taken inside a transaction is not released when the statement finishes — it is held until commit. These accumulate: " + strongInTxn.join(", ") + ". The table is blocked for the combined duration, not the longest one.",
+          fix: "Split these into separate migrations, each committing on its own." });
+      }
+      inTxn = false; strongInTxn = []; return;
+    }
+    if (inTxn && s.lock && LOCKS[s.lock].rank >= 5) strongInTxn.push(s.op);
+  });
+
+  var worst = statements.reduce(function (a, s) { return SEV_RANK[s.severity] > SEV_RANK[a] ? s.severity : a; }, "safe");
+  var sWorst = script.reduce(function (a, f) { return SEV_RANK[f.severity] > SEV_RANK[a] ? f.severity : a; }, "safe");
+  var overall = SEV_RANK[sWorst] > SEV_RANK[worst] ? sWorst : worst;
+
+  var blocking = statements.filter(function (s) { return s.lock && LOCKS[s.lock].rank >= 5; });
+  var blockedSeconds = blocking.reduce(function (sum, s) { return sum + (s.seconds || 0); }, 0);
+
+  return {
+    rows: rows, statements: statements, script: script, verdict: overall,
+    blockingCount: blocking.length, blockedSeconds: blockedSeconds,
+    blockedFor: describeDuration(blockedSeconds || null),
+    worstLock: blocking.reduce(function (a, s) { return !a || LOCKS[s.lock].rank > LOCKS[a].rank ? s.lock : a; }, null)
+  };
+}
+
+/* ================================ view ================================ */
+
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+var RISKY = [
+  "BEGIN;",
+  "",
+  "ALTER TABLE orders ADD COLUMN placed_at timestamptz NOT NULL DEFAULT now();",
+  "",
+  "CREATE INDEX idx_orders_placed ON orders (placed_at);",
+  "",
+  "ALTER TABLE orders ALTER COLUMN customer_id SET NOT NULL;",
+  "",
+  "ALTER TABLE orders ADD CONSTRAINT orders_customer_fk",
+  "  FOREIGN KEY (customer_id) REFERENCES customers (id);",
+  "",
+  "COMMIT;"
+].join("\n");
+
+var SAFE = [
+  "SET lock_timeout = '3s';",
+  "SET statement_timeout = '30s';",
+  "",
+  "-- Catalog-only on PG 11+, so the column itself is instant.",
+  "ALTER TABLE orders ADD COLUMN placed_at timestamptz;",
+  "ALTER TABLE orders ALTER COLUMN placed_at SET DEFAULT now();",
+  "",
+  "-- Outside any transaction block.",
+  "CREATE INDEX CONCURRENTLY idx_orders_placed ON orders (placed_at);",
+  "",
+  "-- Prove it, then declare it.",
+  "ALTER TABLE orders ADD CONSTRAINT orders_customer_id_not_null",
+  "  CHECK (customer_id IS NOT NULL) NOT VALID;",
+  "ALTER TABLE orders VALIDATE CONSTRAINT orders_customer_id_not_null;",
+  "ALTER TABLE orders ALTER COLUMN customer_id SET NOT NULL;",
+  "ALTER TABLE orders DROP CONSTRAINT orders_customer_id_not_null;",
+  "",
+  "ALTER TABLE orders ADD CONSTRAINT orders_customer_fk",
+  "  FOREIGN KEY (customer_id) REFERENCES customers (id) NOT VALID;",
+  "ALTER TABLE orders VALIDATE CONSTRAINT orders_customer_fk;"
+].join("\n");
+
+function lockClass(lock) {
+  if (!lock) return "";
+  var r = LOCKS[lock].rank;
+  if (r >= 6) return "lock-strong";
+  if (r >= 5) return "lock-write";
+  return "lock-weak";
+}
+
+function renderChart(result) {
+  var bars = result.statements.filter(function (s) { return s.seconds && s.lock && LOCKS[s.lock].rank >= 5; });
+  if (!bars.length) {
+    $("chart").innerHTML = '<p class="chart-note">Nothing in this migration holds a blocking lock for a measurable time.</p>';
+    return;
+  }
+  var total = bars.reduce(function (a, s) { return a + s.seconds; }, 0);
+  // Each row carries a bar plus a caption underneath, so the row has to be tall
+  // enough for both or the caption sits on the next bar.
+  var W = 460, barH = 14, capGap = 12, rowGap = 10;
+  var rowH = barH + capGap + rowGap;
+  var H = bars.length * rowH;
+  var maxS = Math.max.apply(null, bars.map(function (s) { return s.seconds; }));
+
+  var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Blocking statements by how long they hold their lock. Total ' + esc(result.blockedFor) + '.">';
+  bars.forEach(function (s, i) {
+    var y = i * rowH;
+    var w = Math.max(3, (s.seconds / maxS) * (W - 120));
+    var color = s.severity === "critical" ? "var(--critical)" : s.severity === "high" ? "var(--high)" : "var(--medium)";
+    svg += '<rect x="0" y="' + y + '" width="' + w.toFixed(1) + '" height="' + barH + '" rx="3" fill="' + color + '" opacity="0.9"/>';
+    svg += '<text x="' + (w + 7).toFixed(1) + '" y="' + (y + barH - 3) + '" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-2)">' +
+           esc(s.duration.replace("about ", "")) + "</text>";
+    svg += '<text x="0" y="' + (y + barH + capGap) + '" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--ink-3)">' +
+           esc(s.op) + "</text>";
+  });
+  svg += "</svg>";
+  $("chart").innerHTML = svg +
+    '<p class="chart-note">Stacked, the table is unavailable for ' + esc(describeDuration(total)) +
+    ' — locks taken inside one transaction are all held until it commits.</p>';
+}
+
+function renderCards(result) {
+  var judged = result.statements.filter(function (s) { return s.severity !== "info"; });
+  if (!judged.length) {
+    $("cards").innerHTML = '<li class="empty">Nothing to assess yet. Paste a migration above.</li>';
+    return;
+  }
+  $("cards").innerHTML = judged.map(function (s) {
+    var badges = "";
+    if (s.lock) badges += '<span class="badge ' + lockClass(s.lock) + '">' + esc(s.lock) + "</span>";
+    if (s.work && s.work !== "none" && s.work !== "catalog") badges += '<span class="badge">' + esc(s.work) + "</span>";
+    if (s.seconds) badges += '<span class="badge">' + esc(s.duration) + "</span>";
+
+    var blocks = s.holdsLock
+      ? '<p class="blocks">Blocks <b>' + esc(s.holdsLock.blocks) + "</b>. " + esc(s.holdsLock.note) + "</p>"
+      : "";
+
+    var fix = s.fix
+      ? '<div class="fix"><div class="fix-head"><h4>' + esc(s.fix.title) + "</h4>" +
+        '<button class="btn" type="button" data-copy="' + esc(s.fix.sql) + '">Copy</button></div>' +
+        "<pre>" + esc(s.fix.sql) + "</pre>" +
+        (s.fix.note ? '<p class="note">' + esc(s.fix.note) + "</p>" : "") + "</div>"
+      : "";
+
+    return '<li class="card" data-sev="' + s.severity + '">' +
+      '<div class="card-top">' +
+        '<div class="card-title"><h3>' + esc(s.title) + "</h3>" +
+        '<span class="where">line ' + s.line + (s.table ? " &middot; " + esc(s.table) : "") + "</span></div>" +
+        '<div class="badges">' + badges + "</div>" +
+        '<div class="stmt">' + esc(s.raw) + "</div>" +
+        (s.mechanism ? '<p class="why">' + esc(s.mechanism) + "</p>" : "") +
+        blocks +
+      "</div>" + fix + "</li>";
+  }).join("");
+}
+
+function renderScript(result) {
+  if (!result.script.length) {
+    $("script-cards").innerHTML = '<li class="empty">Nothing wrong with how the statements are arranged.</li>';
+    return;
+  }
+  $("script-cards").innerHTML = result.script.map(function (f) {
+    return '<li class="card script-finding" data-sev="' + f.severity + '">' +
+      '<div class="card-top">' +
+        '<div class="card-title"><h3>' + esc(f.title) + "</h3></div>" +
+        '<p class="why">' + esc(f.detail) + "</p>" +
+      "</div>" +
+      (f.fix ? '<div class="fix"><div class="fix-head"><h4>What to do instead</h4>' +
+        '<button class="btn" type="button" data-copy="' + esc(f.fix) + '">Copy</button></div><pre>' +
+        esc(f.fix) + "</pre></div>" : "") +
+      "</li>";
+  }).join("");
+}
+
+var VERDICT_TEXT = {
+  critical: ["Do not run this as written", "At least one statement rewrites or blocks the whole table."],
+  high:     ["Risky on a live table", "Nothing rewrites the table, but writes stop for a measurable time."],
+  medium:   ["Check the deploy order", "The locks are brief; the risk is to code that is already running."],
+  low:      ["Mostly fine", "Short locks only. Worth a lock_timeout anyway."],
+  safe:     ["Safe to run live", "Nothing here blocks reads or writes for a meaningful time."]
+};
+
+function render() {
+  var rows = Number($("rows").value);
+  var result = analyze($("sql").value, { rows: isFinite(rows) ? rows : 0 });
+
+  $("stmt-count").textContent = result.statements.length + " statement" + (result.statements.length === 1 ? "" : "s");
+  $("worst-lock").textContent = result.worstLock || "no blocking lock";
+  $("rows-hint").textContent = isFinite(rows) && rows > 0 ? "(" + rows.toLocaleString("en-US") + " rows)" : "";
+
+  var v = VERDICT_TEXT[result.verdict] || VERDICT_TEXT.safe;
+  $("headline").className = "headline v-" + result.verdict;
+  $("verdict-tag").textContent = v[0];
+  $("verdict-sub").textContent = v[1];
+
+  $("figures").innerHTML =
+    '<div class="fig"><span class="k">Table blocked</span><span class="v">' + esc(result.blockedFor) + "</span></div>" +
+    '<div class="fig"><span class="k">Blocking statements</span><span class="v">' + result.blockingCount + "</span></div>" +
+    '<div class="fig"><span class="k">Strongest lock</span><span class="v" style="font-size:.78rem">' + esc(result.worstLock || "—") + "</span></div>";
+
+  renderChart(result);
+  renderCards(result);
+  renderScript(result);
+}
+
+/* ------------------------------------------------------------- events */
+
+var timer = null;
+$("sql").addEventListener("input", function () {
+  clearTimeout(timer);
+  timer = setTimeout(render, 180);
+});
+$("rows").addEventListener("input", render);
+$("load-risky").addEventListener("click", function () { $("sql").value = RISKY; render(); });
+$("load-safe").addEventListener("click", function () { $("sql").value = SAFE; render(); });
+
+document.addEventListener("click", function (ev) {
+  var btn = ev.target.closest("[data-copy]");
+  if (!btn) return;
+  copy(btn.getAttribute("data-copy"));
+});
+
+$("copy-safe").addEventListener("click", function () {
+  var rows = Number($("rows").value);
+  var result = analyze($("sql").value, { rows: isFinite(rows) ? rows : 0 });
+  var out = ["-- Rewritten by Lock Queue.",
+             "-- Statements that had a safer equivalent were replaced; the rest are unchanged.",
+             "-- CONCURRENTLY statements must run outside any transaction block.",
+             ""];
+  if (!result.statements.some(function (s) { return s.op === "SET lock_timeout"; })) {
+    out.push("SET lock_timeout = '3s';", "SET statement_timeout = '30s';", "");
+  }
+  result.statements.forEach(function (s) {
+    if (s.op === "BEGIN" || s.op === "COMMIT" || s.op === "ROLLBACK") return;
+    if (s.fix) { out.push("-- was: " + s.raw.split("\n")[0].slice(0, 70)); out.push(s.fix.sql, ""); }
+    else { out.push(s.raw.replace(/;?\s*$/, "") + ";", ""); }
+  });
+  copy(out.join("\n"), "Safe migration copied.");
+});
+
+function copy(text, msg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      function () { say(msg || "Copied."); },
+      function () { say("Copy blocked here — select the text instead."); }
+    );
+  } else say("Copy blocked here — select the text instead.");
+}
+function say(m) {
+  $("said").textContent = m;
+  setTimeout(function () { if ($("said").textContent === m) $("said").textContent = ""; }, 3500);
+}
+
+$("sql").value = RISKY;
+render();
+})();
+</script>
