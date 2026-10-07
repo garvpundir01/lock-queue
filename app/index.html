@@ -1,0 +1,1362 @@
+<title>Lock Queue Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<style>
+/* Layout: an application shell — sticky nav, a view switcher, and work saved to
+   the artifact store. Tokens are taken from the portfolio design system (cyan
+   #22d3ee + indigo #818cf8 on near-black, Inter with JetBrains Mono for data),
+   dark-first, so bare :root carries dark and the light palette arrives by media
+   query or an explicit stamp. */
+:root {
+  color-scheme: dark;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1rem;
+  --fs-lg: clamp(1.0625rem, 0.4vw + 0.98rem, 1.1875rem);
+  --fs-xl: clamp(1.25rem, 0.8vw + 1.1rem, 1.5rem);
+  --fs-2xl: clamp(1.625rem, 1.6vw + 1.3rem, 2.25rem);
+
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem; --sp-6: 2rem; --sp-7: 3rem; --sp-8: 4rem;
+
+  --content-width: 1140px;
+  --nav-h: 60px;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-pill: 999px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --bg: #0a0b0d;
+  --bg-elev: #111318;
+  --bg-elev-2: #171a21;
+  --bg-inset: rgba(255, 255, 255, 0.03);
+  --text: #e9edf2;
+  --text-muted: #98a2b0;
+  --text-faint: #7d8896;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, 0.13);
+  --accent-2: #818cf8;
+  --accent-contrast: #04191d;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.7);
+  --nav-bg: rgba(10, 11, 13, 0.72);
+  --grid-line: rgba(255, 255, 255, 0.028);
+
+  --critical: #fb7185;
+  --critical-soft: rgba(251, 113, 133, 0.13);
+  --high: #fbbf24;
+  --high-soft: rgba(251, 191, 36, 0.13);
+  --medium: #a3b2c7;
+  --medium-soft: rgba(163, 178, 199, 0.12);
+  --ok: #34d399;
+  --ok-soft: rgba(52, 211, 153, 0.13);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #fcfcfd;
+    --bg-elev: #ffffff;
+    --bg-elev-2: #f6f7f9;
+    --bg-inset: rgba(10, 11, 13, 0.025);
+    --text: #10141a;
+    --text-muted: #57616f;
+    --text-faint: #666f7b;
+    --border: rgba(10, 11, 13, 0.1);
+    --border-strong: rgba(10, 11, 13, 0.2);
+    --accent: #0e7490;
+    --accent-soft: rgba(14, 116, 144, 0.09);
+    --accent-2: #4f46e5;
+    --accent-contrast: #ffffff;
+    --shadow-sm: 0 1px 2px rgba(16, 20, 26, 0.06);
+    --shadow: 0 12px 28px -14px rgba(16, 20, 26, 0.22);
+    --nav-bg: rgba(252, 252, 253, 0.78);
+    --grid-line: rgba(10, 11, 13, 0.032);
+    --critical: #be123c;
+    --critical-soft: rgba(190, 18, 60, 0.09);
+    --high: #a16207;
+    --high-soft: rgba(161, 98, 7, 0.1);
+    --medium: #475569;
+    --medium-soft: rgba(71, 85, 105, 0.09);
+    --ok: #047857;
+    --ok-soft: rgba(4, 120, 87, 0.1);
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fcfcfd;
+  --bg-elev: #ffffff;
+  --bg-elev-2: #f6f7f9;
+  --bg-inset: rgba(10, 11, 13, 0.025);
+  --text: #10141a;
+  --text-muted: #57616f;
+  --text-faint: #666f7b;
+  --border: rgba(10, 11, 13, 0.1);
+  --border-strong: rgba(10, 11, 13, 0.2);
+  --accent: #0e7490;
+  --accent-soft: rgba(14, 116, 144, 0.09);
+  --accent-2: #4f46e5;
+  --accent-contrast: #ffffff;
+  --shadow-sm: 0 1px 2px rgba(16, 20, 26, 0.06);
+  --shadow: 0 12px 28px -14px rgba(16, 20, 26, 0.22);
+  --nav-bg: rgba(252, 252, 253, 0.78);
+  --grid-line: rgba(10, 11, 13, 0.032);
+  --critical: #be123c;
+  --critical-soft: rgba(190, 18, 60, 0.09);
+  --high: #a16207;
+  --high-soft: rgba(161, 98, 7, 0.1);
+  --medium: #475569;
+  --medium-soft: rgba(71, 85, 105, 0.09);
+  --ok: #047857;
+  --ok-soft: rgba(4, 120, 87, 0.1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+[hidden] { display: none !important; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { font-weight: 620; line-height: 1.15; letter-spacing: -0.022em; text-wrap: balance; }
+p { text-wrap: pretty; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+ul, ol { padding: 0; list-style: none; }
+::selection { background: var(--accent); color: var(--accent-contrast); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+.skip-link {
+  position: absolute; top: var(--sp-3); left: var(--sp-3); z-index: 2000;
+  padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm);
+  background: var(--accent); color: var(--accent-contrast); font-weight: 600;
+  transform: translateY(-200%); transition: transform 0.2s var(--ease);
+}
+.skip-link:focus, .skip-link:focus-visible { transform: translateY(0); }
+.vh { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ------------------------------------------------------------------ nav */
+
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 100;
+  border-bottom: 1px solid var(--border);
+  background: var(--nav-bg);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.nav__inner {
+  display: flex; align-items: center; gap: var(--sp-5);
+  max-width: var(--content-width); margin-inline: auto;
+  min-height: var(--nav-h); padding-inline: var(--sp-5);
+}
+.brand { display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: 650; letter-spacing: -0.02em; white-space: nowrap; }
+.brand__mark { width: 9px; height: 9px; border-radius: 2px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+
+.nav__links { display: flex; gap: var(--sp-1); }
+.nav__link {
+  padding: 0.35rem 0.7rem; border-radius: var(--radius-sm);
+  color: var(--text-muted); font-size: var(--fs-sm); font-weight: 500;
+  transition: color 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+.nav__link:hover { color: var(--text); background: var(--bg-inset); }
+.nav__link[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+.nav__right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
+.who { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); color: var(--text-faint); font-family: var(--font-mono); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+.dot--off { background: var(--text-faint); }
+
+/* --------------------------------------------------------------- layout */
+
+.page { max-width: var(--content-width); margin-inline: auto; padding-inline: var(--sp-5); padding-block: var(--sp-6) var(--sp-8); }
+
+.page__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+.page__title { font-size: var(--fs-2xl); }
+.page__kicker { margin-top: var(--sp-2); max-width: 64ch; color: var(--text-muted); }
+.eyebrow { color: var(--accent); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* --------------------------------------------------------------- pieces */
+
+.card {
+  position: relative; padding: var(--sp-5);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elev);
+  transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--bg-elev); color: var(--text);
+  font-size: var(--fs-sm); font-weight: 550; white-space: nowrap;
+  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--accent); box-shadow: var(--shadow-sm); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn--primary { border-color: transparent; background: var(--accent); color: var(--accent-contrast); font-weight: 600; }
+.btn--primary:hover:not(:disabled) { border-color: transparent; filter: brightness(1.08); box-shadow: 0 8px 24px -10px var(--accent); }
+.btn--ghost { border-color: transparent; background: transparent; color: var(--text-muted); }
+.btn--ghost:hover:not(:disabled) { border-color: var(--border); color: var(--text); }
+.btn--sm { padding: 0.35rem 0.7rem; font-size: var(--fs-xs); }
+.btn--danger:hover:not(:disabled) { border-color: var(--critical); color: var(--critical); }
+
+.tag {
+  padding: 0.24rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-pill);
+  background: var(--bg-inset); color: var(--text-muted);
+  font-family: var(--font-mono); font-size: var(--fs-xs); white-space: nowrap;
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.2rem 0.6rem; border-radius: var(--radius-pill);
+  font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+}
+.pill--critical { background: var(--critical-soft); color: var(--critical); }
+.pill--high     { background: var(--high-soft); color: var(--high); }
+.pill--medium,
+.pill--low      { background: var(--medium-soft); color: var(--medium); }
+.pill--safe     { background: var(--ok-soft); color: var(--ok); }
+.pill--open     { background: var(--high-soft); color: var(--high); }
+.pill--shipped  { background: var(--ok-soft); color: var(--ok); }
+.pill--dismissed{ background: var(--medium-soft); color: var(--medium); }
+
+.field { display: grid; gap: var(--sp-2); }
+.field label { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); }
+.input, .select, .textarea {
+  width: 100%; padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-inset); color: var(--text); font-size: var(--fs-sm);
+  transition: border-color 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+.input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--accent); background: var(--bg-elev); }
+.textarea { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.65; min-height: 16rem; resize: vertical; tab-size: 2; }
+.mono { font-family: var(--font-mono); }
+
+/* --------------------------------------------------------------- states */
+
+.state {
+  display: grid; place-items: center; gap: var(--sp-3);
+  padding: var(--sp-8) var(--sp-5); text-align: center;
+  border: 1px dashed var(--border-strong); border-radius: var(--radius);
+}
+.state h3 { font-size: var(--fs-lg); }
+.state p { max-width: 48ch; color: var(--text-muted); font-size: var(--fs-sm); }
+
+.skeleton { border-radius: var(--radius-sm); background: var(--bg-elev-2); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-5);
+  border: 1px solid var(--border); border-left: 3px solid var(--high);
+  border-radius: var(--radius-sm); background: var(--bg-elev);
+  font-size: var(--fs-sm); color: var(--text-muted);
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + var(--sp-5));
+  transform: translate(-50%, 1rem); z-index: 500;
+  padding: 0.6rem 1rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+  background: var(--bg-elev); color: var(--text); box-shadow: var(--shadow);
+  font-size: var(--fs-sm); opacity: 0; pointer-events: none;
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* ------------------------------------------------------------- stat row */
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-6); }
+.stat { display: grid; gap: 0.15rem; }
+.stat__value {
+  font-size: var(--fs-xl); font-weight: 650; letter-spacing: -0.03em;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.stat__label { color: var(--text); font-size: var(--fs-sm); font-weight: 550; }
+.stat__detail { color: var(--text-faint); font-size: var(--fs-xs); line-height: 1.5; }
+
+/* -------------------------------------------------------------- reviews */
+
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; margin-bottom: var(--sp-4); }
+.toolbar .input { width: auto; min-width: 12rem; flex: 1 1 14rem; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.seg button { padding: 0.35rem 0.7rem; font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.rows { display: grid; gap: var(--sp-3); }
+.row-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-3) var(--sp-4); align-items: center; padding: var(--sp-4) var(--sp-5); cursor: pointer; }
+.row-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow); }
+.row-card__main { display: grid; gap: 0.3rem; min-width: 0; }
+.row-card__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-3); }
+.row-card__title h3 { font-size: var(--fs-md); }
+.row-card__meta { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); color: var(--text-faint); font-size: var(--fs-xs); font-family: var(--font-mono); }
+.row-card__right { display: flex; align-items: center; gap: var(--sp-3); }
+
+/* --------------------------------------------------------------- detail */
+
+.detail { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+.sql-block {
+  font-family: var(--font-mono); font-size: var(--fs-xs); line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+  padding: var(--sp-4); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-inset); color: var(--text-muted); max-height: 22rem; overflow: auto;
+}
+
+.finding { padding: var(--sp-4) var(--sp-5); border-left-width: 3px; }
+.finding[data-sev="critical"] { border-left-color: var(--critical); }
+.finding[data-sev="high"]     { border-left-color: var(--high); }
+.finding[data-sev="medium"], .finding[data-sev="low"] { border-left-color: var(--border-strong); }
+.finding[data-sev="safe"]     { border-left-color: var(--ok); }
+.finding__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-2); }
+.finding__head h4 { font-size: var(--fs-base); }
+.finding__why { color: var(--text-muted); font-size: var(--fs-sm); }
+.finding__blocks { margin-top: var(--sp-2); color: var(--text-muted); font-size: var(--fs-xs); }
+.finding__blocks b { color: var(--text); }
+
+.fix { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border); display: grid; gap: var(--sp-2); }
+.fix__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.fix__head h5 { font-size: var(--fs-xs); font-weight: 600; color: var(--ok); font-family: var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.fix pre {
+  font-family: var(--font-mono); font-size: var(--fs-xs); line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+  padding: var(--sp-3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-inset); color: var(--text); overflow-x: auto;
+}
+.fix__note { color: var(--text-faint); font-size: var(--fs-xs); }
+
+.sticky-side { position: sticky; top: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + var(--sp-4)); display: grid; gap: var(--sp-4); }
+
+.kv { display: grid; gap: var(--sp-3); }
+.kv > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.kv dt { color: var(--text-faint); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; text-transform: uppercase; }
+.kv dd { font-size: var(--fs-sm); font-weight: 550; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- table */
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elev); }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min-width: 520px; }
+th {
+  text-align: left; padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-faint); font-family: var(--font-mono); font-size: var(--fs-xs);
+  font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+}
+td { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg-inset); }
+td.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ----------------------------------------------------------- responsive */
+
+@media (max-width: 900px) {
+  .detail { grid-template-columns: 1fr; }
+  .sticky-side { position: static; }
+}
+@media (max-width: 680px) {
+  .nav__inner { gap: var(--sp-3); padding-inline: var(--sp-4); flex-wrap: wrap; }
+  .nav__links { order: 3; width: 100%; overflow-x: auto; padding-bottom: var(--sp-2); }
+  .page { padding-inline: var(--sp-4); }
+  .row-card { grid-template-columns: 1fr; }
+  .row-card__right { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="nav__inner">
+    <span class="brand"><span class="brand__mark"></span>Lock Queue</span>
+    <nav class="nav__links" id="nav-links" aria-label="Views">
+      <a class="nav__link" href="#/reviews" data-view="reviews">Reviews</a>
+      <a class="nav__link" href="#/new" data-view="new">New review</a>
+      <a class="nav__link" href="#/tables" data-view="tables">Tables</a>
+    </nav>
+    <div class="nav__right">
+      <span class="who" id="who"><span class="dot dot--off"></span><span id="who-text">Connecting</span></span>
+    </div>
+  </div>
+</header>
+
+<main id="main"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+"use strict";
+
+/* ===================== engine (mirrors src/engine.js) ===================== */
+
+var LOCKS = {
+  "ACCESS EXCLUSIVE":      { rank: 8, blocks: "everything, including SELECT", note: "Nothing can read or write the table while this is held." },
+  "SHARE ROW EXCLUSIVE":   { rank: 6, blocks: "all writes and other schema changes", note: "Reads continue. INSERT, UPDATE and DELETE wait." },
+  "SHARE":                 { rank: 5, blocks: "all writes", note: "Reads continue. Writes wait for the whole build." },
+  "SHARE UPDATE EXCLUSIVE":{ rank: 4, blocks: "other schema changes and VACUUM", note: "Reads and writes both continue normally." },
+  "ROW EXCLUSIVE":         { rank: 3, blocks: "nothing that matters here", note: "The ordinary write lock." },
+  "ACCESS SHARE":          { rank: 1, blocks: "nothing", note: "The ordinary read lock." }
+};
+
+function splitStatements(sql) {
+  var out = [], buf = "", line = 1, startLine = 1, i = 0;
+  function push() {
+    var text = buf.trim();
+    if (text) {
+      var lead = buf.match(/^\s*/)[0];
+      out.push({ sql: text, line: startLine + (lead.match(/\n/g) || []).length });
+    }
+    buf = ""; startLine = line;
+  }
+  while (i < sql.length) {
+    var c = sql[i], n2 = sql.slice(i, i + 2);
+    if (c === "\n") { line++; buf += c; i++; continue; }
+    if (n2 === "--") { var e = sql.indexOf("\n", i); var s1 = e === -1 ? sql.length : e; buf += sql.slice(i, s1); i = s1; continue; }
+    if (n2 === "/*") { var e2 = sql.indexOf("*/", i + 2); var s2 = e2 === -1 ? sql.length : e2 + 2;
+      for (var a = i; a < s2; a++) if (sql[a] === "\n") line++; buf += sql.slice(i, s2); i = s2; continue; }
+    if (c === "'") { var k = i + 1;
+      while (k < sql.length) {
+        if (sql[k] === "'" && sql[k + 1] === "'") { k += 2; continue; }
+        if (sql[k] === "'") { k++; break; }
+        if (sql[k] === "\n") line++; k++;
+      }
+      buf += sql.slice(i, k); i = k; continue; }
+    if (c === '"') { var k2 = i + 1; while (k2 < sql.length && sql[k2] !== '"') { if (sql[k2] === "\n") line++; k2++; }
+      buf += sql.slice(i, k2 + 1); i = k2 + 1; continue; }
+    if (c === "$") {
+      var m = sql.slice(i).match(/^\$([A-Za-z_][A-Za-z0-9_]*)?\$/);
+      if (m) { var tag = m[0]; var e3 = sql.indexOf(tag, i + tag.length); var s3 = e3 === -1 ? sql.length : e3 + tag.length;
+        for (var b = i; b < s3; b++) if (sql[b] === "\n") line++; buf += sql.slice(i, s3); i = s3; continue; }
+    }
+    if (c === ";") { push(); i++; continue; }
+    buf += c; i++;
+  }
+  push();
+  return out;
+}
+
+function normalize(s) { return s.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim().toUpperCase(); }
+
+var VOLATILE = /\b(NOW|CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|CLOCK_TIMESTAMP|TIMEOFDAY|RANDOM|GEN_RANDOM_UUID|UUID_GENERATE_V[14]|NEXTVAL)\b/;
+
+function tableOf(norm, original) {
+  var pats = [
+    /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:CONCURRENTLY\s+)?(?:IF\s+NOT\s+EXISTS\s+)?(?:[A-Z0-9_."]+\s+)?ON\s+(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?([A-Z0-9_."]+)/,
+    /TRUNCATE\s+(?:TABLE\s+)?(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /(?:UPDATE|DELETE\s+FROM)\s+(?:ONLY\s+)?([A-Z0-9_."]+)/,
+    /VACUUM\s+(?:FULL\s+)?(?:ANALYZE\s+)?([A-Z0-9_."]+)/,
+    /CLUSTER\s+(?:VERBOSE\s+)?([A-Z0-9_."]+)/,
+    /REINDEX\s+(?:TABLE|INDEX)\s+(?:CONCURRENTLY\s+)?([A-Z0-9_."]+)/,
+    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Z0-9_."]+)/
+  ];
+  for (var i = 0; i < pats.length; i++) {
+    var m = norm.match(pats[i]);
+    if (m) { var idx = original.toUpperCase().indexOf(m[1]); return idx === -1 ? m[1].toLowerCase() : original.slice(idx, idx + m[1].length); }
+  }
+  return null;
+}
+function columnOf(norm, original, re) {
+  var m = norm.match(re); if (!m) return null;
+  var idx = original.toUpperCase().indexOf(m[1]);
+  return idx === -1 ? m[1].toLowerCase() : original.slice(idx, idx + m[1].length);
+}
+function q(n) { return n ? n.replace(/"/g, "") : "table"; }
+function C(base, extra) { return Object.assign({}, base, extra); }
+
+function classify(stmt) {
+  var o = stmt.sql, n = normalize(o), table = tableOf(n, o), t = q(table);
+  var base = { table: table, raw: o, line: stmt.line };
+
+  if (/^(BEGIN|START TRANSACTION)\b/.test(n)) return C(base, { op: "BEGIN", lock: null, work: "none", severity: "info", title: "Transaction begins" });
+  if (/^(COMMIT|END)\b/.test(n)) return C(base, { op: "COMMIT", lock: null, work: "none", severity: "info", title: "Transaction commits" });
+  if (/^ROLLBACK\b/.test(n)) return C(base, { op: "ROLLBACK", lock: null, work: "none", severity: "info", title: "Rollback" });
+  if (/^SET\s+LOCK_TIMEOUT/.test(n)) return C(base, { op: "SET lock_timeout", lock: null, work: "none", severity: "safe", title: "Sets a lock timeout", mechanism: "Caps how long this session waits for a lock, which is what stops a blocked migration queueing traffic behind it." });
+  if (/^SET\b/.test(n)) return C(base, { op: "SET", lock: null, work: "none", severity: "safe", title: "Session setting" });
+
+  if (/^CREATE\s+(UNIQUE\s+)?INDEX/.test(n)) {
+    if (/\bCONCURRENTLY\b/.test(n)) return C(base, { op: "CREATE INDEX CONCURRENTLY", lock: "SHARE UPDATE EXCLUSIVE", work: "build-index", severity: "safe",
+      title: "Builds the index without blocking",
+      mechanism: "Two passes over the table while reads and writes continue. Slower in wall-clock terms than a plain build, which is the trade you want.",
+      needsOwnTransaction: true });
+    return C(base, { op: "CREATE INDEX", lock: "SHARE", work: "build-index", severity: "high",
+      title: "Blocks every write until the index is built",
+      mechanism: "A plain CREATE INDEX takes a SHARE lock for the whole build. Reads continue; every INSERT, UPDATE and DELETE on this table waits until it finishes.",
+      fix: { title: "Build it concurrently instead",
+        sql: o.replace(/CREATE\s+(UNIQUE\s+)?INDEX/i, function (m) { return m + " CONCURRENTLY"; }),
+        note: "CREATE INDEX CONCURRENTLY cannot run inside a transaction block, so this has to sit outside BEGIN/COMMIT. If it fails it leaves an invalid index behind — drop it and retry." } });
+  }
+
+  if (/^DROP\s+INDEX/.test(n)) {
+    if (/\bCONCURRENTLY\b/.test(n)) return C(base, { op: "DROP INDEX CONCURRENTLY", lock: "SHARE UPDATE EXCLUSIVE", work: "catalog", severity: "safe", title: "Drops the index without blocking", needsOwnTransaction: true });
+    return C(base, { op: "DROP INDEX", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium",
+      title: "Takes the strongest lock, briefly",
+      mechanism: "The drop itself is fast, but it needs ACCESS EXCLUSIVE to get it. Acquiring that on a busy table is where the queue forms.",
+      fix: { title: "Drop it concurrently", sql: o.replace(/DROP\s+INDEX/i, "DROP INDEX CONCURRENTLY"), note: "Cannot run inside a transaction block." } });
+  }
+
+  if (/^ALTER\s+TABLE/.test(n)) {
+    if (/\bADD\s+(COLUMN\s+)?/.test(n) && !/\bADD\s+CONSTRAINT\b/.test(n)) {
+      var col = columnOf(n, o, /ADD\s+(?:COLUMN\s+)?(?:IF\s+NOT\s+EXISTS\s+)?([A-Z0-9_."]+)/);
+      var hasDef = /\bDEFAULT\b/.test(n), vol = hasDef && VOLATILE.test(n), uniq = /\bUNIQUE\b/.test(n), nn = /\bNOT\s+NULL\b/.test(n);
+      if (vol) return C(base, { op: "ADD COLUMN (volatile default)", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+        title: "Rewrites every row in the table",
+        mechanism: "A constant default is stored once in the catalog and costs nothing. A volatile default like now() or gen_random_uuid() has to be evaluated per row, so Postgres rewrites the whole table while holding ACCESS EXCLUSIVE.",
+        fix: { title: "Add the column, then the default, then backfill",
+          sql: ["ALTER TABLE " + t + " ADD COLUMN " + q(col) + " <type>;",
+                "ALTER TABLE " + t + " ALTER COLUMN " + q(col) + " SET DEFAULT <volatile expression>;", "",
+                "-- Backfill in batches so no single statement holds a long lock:",
+                "UPDATE " + t + " SET " + q(col) + " = <volatile expression>",
+                "WHERE " + q(col) + " IS NULL AND id IN (SELECT id FROM " + t + " WHERE " + q(col) + " IS NULL LIMIT 5000);",
+                "-- repeat until no rows are updated"].join("\n"),
+          note: "New rows get the default immediately. Existing rows fill in over many short transactions instead of one long one." } });
+      if (uniq) return C(base, { op: "ADD COLUMN UNIQUE", lock: "ACCESS EXCLUSIVE", work: "build-index", severity: "critical",
+        title: "Builds a unique index while blocking everything",
+        mechanism: "UNIQUE on a new column creates an index, and it is built under the ACCESS EXCLUSIVE lock the ALTER already holds.",
+        fix: { title: "Add the column, then build the index concurrently",
+          sql: ["ALTER TABLE " + t + " ADD COLUMN " + q(col) + " <type>;", "",
+                "CREATE UNIQUE INDEX CONCURRENTLY " + t + "_" + q(col) + "_key ON " + t + " (" + q(col) + ");",
+                "ALTER TABLE " + t + " ADD CONSTRAINT " + t + "_" + q(col) + "_key UNIQUE USING INDEX " + t + "_" + q(col) + "_key;"].join("\n"),
+          note: "ADD CONSTRAINT ... USING INDEX adopts the index you already built instead of building a new one." } });
+      if (nn && !hasDef) return C(base, { op: "ADD COLUMN NOT NULL", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+        title: "Fails outright on a table with rows",
+        mechanism: "NOT NULL with no default has nothing to put in existing rows. On a non-empty table this errors, and the migration dies partway through.",
+        fix: { title: "Give it a default, or add it nullable and tighten later",
+          sql: "ALTER TABLE " + t + " ADD COLUMN " + q(col) + " <type> NOT NULL DEFAULT <constant>;",
+          note: "Since Postgres 11 a constant default is a catalog-only change, so this stays fast at any table size." } });
+      return C(base, { op: "ADD COLUMN", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "low",
+        title: "Catalog-only, but still needs the strongest lock",
+        mechanism: hasDef
+          ? "A constant default is stored once in the catalog, so Postgres 11 and later do not rewrite the table. The work is instant; getting the lock is the only risk."
+          : "Adding a nullable column with no default touches only the catalog. The work is instant; getting the lock is the only risk." });
+    }
+
+    if (/\bALTER\s+(COLUMN\s+)?[A-Z0-9_."]+\s+(SET\s+DATA\s+)?TYPE\b/.test(n)) {
+      var cT = columnOf(n, o, /ALTER\s+(?:COLUMN\s+)?([A-Z0-9_."]+)\s+(?:SET\s+DATA\s+)?TYPE/);
+      var widen = /TYPE\s+TEXT\b/.test(n) || /TYPE\s+VARCHAR\s*(\(|$)/.test(n);
+      return C(base, { op: "ALTER COLUMN TYPE", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+        title: widen ? "Usually a rewrite, occasionally free" : "Rewrites every row in the table",
+        mechanism: widen
+          ? "Widening varchar(n) to a larger varchar or to text is catalog-only. Any other type change rewrites the table under ACCESS EXCLUSIVE, and indexes on the column are rebuilt too."
+          : "Changing a column type rewrites every row and rebuilds every index on it, all while holding ACCESS EXCLUSIVE. int to bigint is the usual trap: it looks like a widening but it is a full rewrite.",
+        fix: { title: "Move to a new column in steps",
+          sql: ["ALTER TABLE " + t + " ADD COLUMN " + q(cT) + "_new <newtype>;", "",
+                "-- Backfill in batches, then keep the two in step:",
+                "UPDATE " + t + " SET " + q(cT) + "_new = " + q(cT) + "::<newtype> WHERE " + q(cT) + "_new IS NULL;", "",
+                "-- Once backfilled and the application writes both, swap the names:",
+                "ALTER TABLE " + t + " RENAME COLUMN " + q(cT) + " TO " + q(cT) + "_old;",
+                "ALTER TABLE " + t + " RENAME COLUMN " + q(cT) + "_new TO " + q(cT) + ";"].join("\n"),
+          note: "Long, but every step is short. The alternative holds the table for the length of a full rewrite." } });
+    }
+
+    if (/\bALTER\s+(COLUMN\s+)?[A-Z0-9_."]+\s+SET\s+NOT\s+NULL\b/.test(n)) {
+      var cN = columnOf(n, o, /ALTER\s+(?:COLUMN\s+)?([A-Z0-9_."]+)\s+SET\s+NOT\s+NULL/);
+      var cname = t + "_" + q(cN) + "_not_null";
+      return C(base, { op: "SET NOT NULL", lock: "ACCESS EXCLUSIVE", work: "scan", severity: "high",
+        title: "Scans the whole table holding the strongest lock",
+        mechanism: "Postgres has to prove no row is null, and it does that with a sequential scan while holding ACCESS EXCLUSIVE.",
+        fix: { title: "Prove it with a NOT VALID check first",
+          sql: ["ALTER TABLE " + t + " ADD CONSTRAINT " + cname + " CHECK (" + q(cN) + " IS NOT NULL) NOT VALID;",
+                "ALTER TABLE " + t + " VALIDATE CONSTRAINT " + cname + ";",
+                "ALTER TABLE " + t + " ALTER COLUMN " + q(cN) + " SET NOT NULL;",
+                "ALTER TABLE " + t + " DROP CONSTRAINT " + cname + ";"].join("\n"),
+          note: "VALIDATE scans under SHARE UPDATE EXCLUSIVE, so reads and writes continue. Postgres 12 and later then accept SET NOT NULL instantly, because the validated constraint is already proof." } });
+    }
+
+    if (/\bADD\s+CONSTRAINT\b/.test(n) || /\bADD\s+(FOREIGN\s+KEY|CHECK|UNIQUE|PRIMARY\s+KEY)\b/.test(n)) {
+      var nv = /\bNOT\s+VALID\b/.test(n);
+      var cn = columnOf(n, o, /ADD\s+CONSTRAINT\s+([A-Z0-9_."]+)/) || "constraint_name";
+      if (/\bFOREIGN\s+KEY\b/.test(n)) {
+        if (nv) return C(base, { op: "ADD FOREIGN KEY NOT VALID", lock: "SHARE ROW EXCLUSIVE", work: "catalog", severity: "safe", title: "Added without validating", mechanism: "New and changed rows are checked from now on; existing rows are not scanned. Validate separately." });
+        return C(base, { op: "ADD FOREIGN KEY", lock: "SHARE ROW EXCLUSIVE", work: "scan", severity: "high",
+          title: "Blocks writes on both tables while it scans",
+          mechanism: "Adding a validated foreign key scans this table and takes a lock on the referenced table too. Writes to either one wait.",
+          fix: { title: "Add it NOT VALID, then validate",
+            sql: [o.trim().replace(/;?\s*$/, "") + " NOT VALID;", "", "ALTER TABLE " + t + " VALIDATE CONSTRAINT " + q(cn) + ";"].join("\n"),
+            note: "The first statement is instant. VALIDATE takes only SHARE UPDATE EXCLUSIVE, so writes continue while it scans." } });
+      }
+      if (/\bCHECK\b/.test(n)) {
+        if (nv) return C(base, { op: "ADD CHECK NOT VALID", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "safe", title: "Added without scanning", mechanism: "Enforced for new rows only until validated." });
+        return C(base, { op: "ADD CHECK", lock: "ACCESS EXCLUSIVE", work: "scan", severity: "high",
+          title: "Scans the table under the strongest lock",
+          mechanism: "A validated CHECK constraint must be proven against every existing row before the ALTER returns.",
+          fix: { title: "Add it NOT VALID, then validate",
+            sql: [o.trim().replace(/;?\s*$/, "") + " NOT VALID;", "", "ALTER TABLE " + t + " VALIDATE CONSTRAINT " + q(cn) + ";"].join("\n") } });
+      }
+      if (/\bUSING\s+INDEX\b/.test(n)) return C(base, { op: "ADD CONSTRAINT USING INDEX", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "safe", title: "Adopts an index you already built", mechanism: "No index build happens here, so the lock is held only for a catalog update." });
+      if (/\b(UNIQUE|PRIMARY\s+KEY)\b/.test(n)) {
+        var cU = columnOf(n, o, /(?:UNIQUE|PRIMARY\s+KEY)\s*\(\s*([A-Z0-9_."]+)/) || "col";
+        return C(base, { op: "ADD UNIQUE / PRIMARY KEY", lock: "ACCESS EXCLUSIVE", work: "build-index", severity: "critical",
+          title: "Builds an index while blocking everything",
+          mechanism: "A UNIQUE or PRIMARY KEY constraint needs a unique index, and it is built while ACCESS EXCLUSIVE is held.",
+          fix: { title: "Build the index concurrently, then adopt it",
+            sql: ["CREATE UNIQUE INDEX CONCURRENTLY " + t + "_" + q(cU) + "_key ON " + t + " (" + q(cU) + ");", "",
+                  "ALTER TABLE " + t + " ADD CONSTRAINT " + q(cn) + " UNIQUE USING INDEX " + t + "_" + q(cU) + "_key;"].join("\n"),
+            note: "The concurrent build does the slow part without blocking; adopting it is a catalog update." } });
+      }
+      return C(base, { op: "ADD CONSTRAINT", lock: "ACCESS EXCLUSIVE", work: "scan", severity: "medium", title: "Constraint added under the strongest lock" });
+    }
+
+    if (/\bVALIDATE\s+CONSTRAINT\b/.test(n)) return C(base, { op: "VALIDATE CONSTRAINT", lock: "SHARE UPDATE EXCLUSIVE", work: "scan", severity: "safe", title: "Scans without blocking reads or writes", mechanism: "This is the half of the two-step that does the work, and it deliberately takes a weak lock." });
+
+    if (/\bDROP\s+(COLUMN|CONSTRAINT)\b/.test(n)) {
+      var isCol = /\bDROP\s+COLUMN\b/.test(n);
+      return C(base, { op: isCol ? "DROP COLUMN" : "DROP CONSTRAINT", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium",
+        title: isCol ? "Instant, and irreversible for any code still reading it" : "Instant catalog change",
+        mechanism: isCol
+          ? "Dropping a column only marks it dead in the catalog, so it is fast. The risk is deployment order: any running copy of the application that still selects this column starts erroring the moment this commits."
+          : "Catalog-only. The lock is held briefly.",
+        fix: isCol ? { title: "Ship the code that stops using it first",
+          sql: ["-- 1. Deploy application code that no longer references the column.",
+                "-- 2. Wait for every old process to drain.",
+                "-- 3. Then: " + o.trim()].join("\n"),
+          note: "Never in the same release as the code change. A column you dropped cannot be un-dropped with its data." } : undefined });
+    }
+
+    if (/\bRENAME\b/.test(n)) return C(base, { op: "RENAME", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium",
+      title: "Instant, and breaks running code the moment it commits",
+      mechanism: "A rename is a catalog update, so it is fast. But every running process still using the old name starts failing immediately, and there is no window where both names work.",
+      fix: { title: "Add the new name alongside, then retire the old one",
+        sql: ["-- Renames cannot be done safely in one step while code is running.",
+              "-- Add a new column, write to both, migrate readers, then drop the old one."].join("\n") } });
+
+    if (/\bSET\s+DEFAULT\b|\bDROP\s+DEFAULT\b|\bDROP\s+NOT\s+NULL\b/.test(n))
+      return C(base, { op: "SET/DROP DEFAULT or DROP NOT NULL", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "low", title: "Catalog-only, but still takes the strongest lock", mechanism: "The change itself is instant. Acquiring ACCESS EXCLUSIVE on a busy table is the only exposure." });
+
+    return C(base, { op: "ALTER TABLE", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "medium", title: "Takes the strongest lock" });
+  }
+
+  if (/^VACUUM\s+FULL/.test(n)) return C(base, { op: "VACUUM FULL", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical",
+    title: "Rewrites the table and blocks everything for the duration",
+    mechanism: "VACUUM FULL writes a whole new copy of the table and needs twice the disk space. Nothing can read or write it meanwhile.",
+    fix: { title: "Use a concurrent repack instead", sql: "-- pg_repack reclaims space without holding an exclusive lock for the whole rewrite.", note: "Plain VACUUM (no FULL) does not block and is usually what was wanted." } });
+  if (/^CLUSTER\b/.test(n)) return C(base, { op: "CLUSTER", lock: "ACCESS EXCLUSIVE", work: "rewrite", severity: "critical", title: "Rewrites the table and blocks everything", mechanism: "CLUSTER physically reorders the table under ACCESS EXCLUSIVE." });
+  if (/^REINDEX/.test(n)) return /\bCONCURRENTLY\b/.test(n)
+    ? C(base, { op: "REINDEX CONCURRENTLY", lock: "SHARE UPDATE EXCLUSIVE", work: "build-index", severity: "safe", title: "Rebuilds without blocking" })
+    : C(base, { op: "REINDEX", lock: "ACCESS EXCLUSIVE", work: "build-index", severity: "critical", title: "Blocks everything while the index rebuilds",
+        fix: { title: "Rebuild concurrently", sql: o.replace(/REINDEX\s+(TABLE|INDEX)/i, "REINDEX $1 CONCURRENTLY") } });
+  if (/^TRUNCATE/.test(n)) return C(base, { op: "TRUNCATE", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "critical", title: "Deletes every row, and cannot be undone", mechanism: "Fast, exclusive, and irreversible outside a transaction you are prepared to roll back." });
+  if (/^DROP\s+TABLE/.test(n)) return C(base, { op: "DROP TABLE", lock: "ACCESS EXCLUSIVE", work: "catalog", severity: "critical", title: "Removes the table and its data", mechanism: "Irreversible. Any running code touching it fails immediately." });
+
+  if (/^(UPDATE|DELETE)\b/.test(n)) {
+    var where = /\bWHERE\b/.test(n), limited = /\bLIMIT\b|\bIN\s*\(\s*SELECT\b/.test(n);
+    if (!where) return C(base, { op: n.indexOf("UPDATE") === 0 ? "UPDATE (no WHERE)" : "DELETE (no WHERE)",
+      lock: "ROW EXCLUSIVE", work: "rows", severity: "high",
+      title: "Touches every row in one transaction",
+      mechanism: "Row locks are held until commit, so a single statement over the whole table blocks any writer touching those rows for its full duration, and leaves dead tuples behind.",
+      fix: { title: "Work in batches",
+        sql: ["-- Repeat until no rows are affected:",
+              (n.indexOf("UPDATE") === 0 ? "UPDATE " : "DELETE FROM ") + t,
+              "WHERE id IN (SELECT id FROM " + t + " WHERE <condition> LIMIT 5000);"].join("\n"),
+        note: "Each batch commits on its own, so locks are short and autovacuum can keep up." } });
+    return C(base, { op: n.indexOf("UPDATE") === 0 ? "UPDATE" : "DELETE", lock: "ROW EXCLUSIVE", work: "rows", severity: limited ? "safe" : "low", title: limited ? "Batched write" : "Filtered write", mechanism: "Holds row locks until commit." });
+  }
+
+  if (/^CREATE\s+TABLE/.test(n)) return C(base, { op: "CREATE TABLE", lock: null, work: "none", severity: "safe", title: "Creates a new table", mechanism: "Nothing is reading it yet, so there is nothing to block." });
+  return C(base, { op: "OTHER", lock: null, work: "none", severity: "info", title: "Not recognised", mechanism: "Lock Queue did not recognise this statement, so it is reported but not judged." });
+}
+
+var RATE = { rewrite: 500000, scan: 2000000, "build-index": 1000000, rows: 200000 };
+function estimateSeconds(work, rows) {
+  var r = RATE[work];
+  if (!r || !isFinite(rows) || rows <= 0) return null;
+  return rows / r;
+}
+function describeDuration(s) {
+  if (s === null) return "instant";
+  if (s < 1) return "under a second";
+  if (s < 60) { var x = Math.max(1, Math.round(s)); return "about " + x + " second" + (x === 1 ? "" : "s"); }
+  var m = s / 60;
+  if (m < 60) { var y = Math.round(m); return "about " + y + " minute" + (y === 1 ? "" : "s"); }
+  return "about " + (m / 60).toFixed(1) + " hours";
+}
+
+var SEV = { critical: 4, high: 3, medium: 2, low: 1, safe: 0, info: 0 };
+
+function analyze(sql, opts) {
+  opts = opts || {};
+  var rows = isFinite(opts.rows) ? opts.rows : 1000000;
+  var statements = splitStatements(sql).map(function (s) {
+    var c = classify(s), sec = estimateSeconds(c.work, rows);
+    return C(c, { seconds: sec, duration: describeDuration(sec), holdsLock: c.lock ? LOCKS[c.lock] : null });
+  });
+
+  var script = [], depth = 0;
+  statements.forEach(function (s) {
+    if (s.op === "BEGIN") depth++;
+    else if (s.op === "COMMIT" || s.op === "ROLLBACK") depth = Math.max(0, depth - 1);
+    else if (s.needsOwnTransaction && depth > 0) script.push({ id: "txn:concurrent", severity: "critical",
+      title: s.op + " cannot run inside a transaction",
+      detail: "Line " + s.line + " uses CONCURRENTLY inside an explicit BEGIN block. Postgres rejects this outright, so the migration fails at that statement.",
+      fix: "Move it outside BEGIN/COMMIT, or run it as its own migration step." });
+  });
+
+  var strong = statements.some(function (s) { return s.lock && LOCKS[s.lock].rank >= 5; });
+  var timeout = statements.some(function (s) { return s.op === "SET lock_timeout"; });
+  if (strong && !timeout) script.push({ id: "lock:no-timeout", severity: "high",
+    title: "No lock_timeout, so a blocked migration takes the table down with it",
+    detail: "Your ALTER waits behind whatever long query is already running, and every query arriving after it queues behind the ALTER — including plain SELECTs. A migration that would have taken 200ms blocks the table for as long as that one slow query runs.",
+    fix: "SET lock_timeout = '3s';\nSET statement_timeout = '30s';\n\n-- With these set, the migration gives up instead of queueing traffic behind it." });
+
+  var inTxn = false, acc = [];
+  statements.forEach(function (s) {
+    if (s.op === "BEGIN") { inTxn = true; acc = []; return; }
+    if (s.op === "COMMIT" || s.op === "ROLLBACK") {
+      if (inTxn && acc.length > 1) script.push({ id: "txn:accumulating", severity: "high",
+        title: acc.length + " strong locks held together until COMMIT",
+        detail: "A lock taken inside a transaction is held until commit, not released when the statement ends. These accumulate: " + acc.join(", ") + ". The table is blocked for the combined duration, not the longest one.",
+        fix: "Split these into separate migrations, each committing on its own." });
+      inTxn = false; acc = []; return;
+    }
+    if (inTxn && s.lock && LOCKS[s.lock].rank >= 5) acc.push(s.op);
+  });
+
+  var worst = statements.reduce(function (a, s) { return SEV[s.severity] > SEV[a] ? s.severity : a; }, "safe");
+  var sw = script.reduce(function (a, f) { return SEV[f.severity] > SEV[a] ? f.severity : a; }, "safe");
+  var overall = SEV[sw] > SEV[worst] ? sw : worst;
+  var blocking = statements.filter(function (s) { return s.lock && LOCKS[s.lock].rank >= 5; });
+  var blockedSeconds = blocking.reduce(function (a, s) { return a + (s.seconds || 0); }, 0);
+
+  return { rows: rows, statements: statements, script: script, verdict: overall,
+    blockingCount: blocking.length, blockedSeconds: blockedSeconds, blockedFor: describeDuration(blockedSeconds || null),
+    worstLock: blocking.reduce(function (a, s) { return !a || LOCKS[s.lock].rank > LOCKS[a].rank ? s.lock : a; }, null) };
+}
+
+/* ============================== app state ============================== */
+
+var state = {
+  ready: false,
+  db: null,
+  user: null,
+  canWrite: null,
+  reviews: [],
+  tables: [],
+  loadingReviews: true,
+  loadingTables: true,
+  filter: "all",
+  search: "",
+  draft: { title: "", sql: "", table: "", rows: 1000000 },
+  persistent: false
+};
+
+var $ = function (s, r) { return (r || document).querySelector(s); };
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+function toast(msg) {
+  var el = $("#toast");
+  el.textContent = msg; el.classList.add("on");
+  clearTimeout(el._t);
+  el._t = setTimeout(function () { el.classList.remove("on"); }, 2800);
+}
+function relTime(ms) {
+  if (!ms) return "—";
+  var d = Date.now() - ms, m = Math.round(d / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return m + "m ago";
+  var h = Math.round(m / 60);
+  if (h < 24) return h + "h ago";
+  var dd = Math.round(h / 24);
+  if (dd < 30) return dd + "d ago";
+  return new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function fmtRows(n) { return Number(n || 0).toLocaleString("en-US"); }
+function uid() { return "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+var VERDICT_LABEL = { critical: "Do not run", high: "Risky", medium: "Check order", low: "Mostly fine", safe: "Safe" };
+
+/* ============================== persistence ============================= */
+
+function localKey() { return "lockqueue.local.v1"; }
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem(localKey()) || "{}"); } catch (e) { return {}; }
+}
+function saveLocal() {
+  if (state.persistent) return;
+  try {
+    localStorage.setItem(localKey(), JSON.stringify({ reviews: state.reviews, tables: state.tables }));
+  } catch (e) { /* private window, blocked storage — the page still works */ }
+}
+
+async function connect() {
+  var db = null, user = null;
+  try { db = await window.claude?.use?.("db"); } catch (e) { db = null; }
+  try { user = await window.claude?.use?.("user"); } catch (e) { user = null; }
+
+  state.db = db || null;
+  state.user = user || null;
+  state.persistent = !!db;
+
+  if (user) {
+    try { state.canWrite = await user.can("data.write"); } catch (e) { state.canWrite = null; }
+  }
+
+  if (!db) {
+    // Design for absence: run against local storage so the tool still works.
+    var local = loadLocal();
+    state.reviews = local.reviews || [];
+    state.tables = local.tables || [];
+    state.loadingReviews = false;
+    state.loadingTables = false;
+    state.ready = true;
+    renderWho();
+    render();
+    return;
+  }
+
+  state.ready = true;
+  renderWho();
+
+  // Subscribe once each, never from render.
+  db.collection("reviews").orderBy("createdAt", "desc").limit(200).onSnapshot(
+    function (snap) {
+      state.reviews = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      state.loadingReviews = false;
+      render();
+    },
+    function (err) {
+      state.loadingReviews = false;
+      toast("Could not load reviews (" + err.code + ")");
+      render();
+    }
+  );
+
+  db.collection("tables").orderBy("name", "asc").limit(200).onSnapshot(
+    function (snap) {
+      state.tables = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      state.loadingTables = false;
+      render();
+    },
+    function (err) {
+      state.loadingTables = false;
+      render();
+    }
+  );
+}
+
+async function saveReview(doc) {
+  if (!state.db) {
+    state.reviews = [doc].concat(state.reviews.filter(function (r) { return r.id !== doc.id; }));
+    saveLocal(); render(); return true;
+  }
+  try {
+    var body = Object.assign({}, doc); delete body.id;
+    await state.db.collection("reviews").doc(doc.id).set(body);
+    return true;
+  } catch (err) {
+    if (err && err.code === "invalid_argument") {
+      state.canWrite = false;
+      toast("This view is read-only, so nothing was saved.");
+    } else {
+      toast("Could not save (" + (err && err.code ? err.code : "unknown") + ")");
+    }
+    render();
+    return false;
+  }
+}
+
+async function patchReview(id, patch) {
+  if (!state.db) {
+    state.reviews = state.reviews.map(function (r) { return r.id === id ? Object.assign({}, r, patch) : r; });
+    saveLocal(); render(); return;
+  }
+  try { await state.db.collection("reviews").doc(id).update(patch); }
+  catch (err) { toast("Could not update (" + (err && err.code ? err.code : "unknown") + ")"); }
+}
+
+async function removeReview(id) {
+  if (!state.db) {
+    state.reviews = state.reviews.filter(function (r) { return r.id !== id; });
+    saveLocal(); render(); return;
+  }
+  try { await state.db.collection("reviews").doc(id).delete(); }
+  catch (err) { toast("Could not delete (" + (err && err.code ? err.code : "unknown") + ")"); }
+}
+
+async function saveTable(doc) {
+  if (!state.db) {
+    state.tables = state.tables.filter(function (t) { return t.id !== doc.id; }).concat([doc])
+      .sort(function (a, b) { return a.name.localeCompare(b.name); });
+    saveLocal(); render(); return;
+  }
+  try {
+    var body = { name: doc.name, rows: doc.rows, updatedAt: Date.now() };
+    await state.db.collection("tables").doc(doc.id).set(body);
+  } catch (err) { toast("Could not save table (" + (err && err.code ? err.code : "unknown") + ")"); }
+}
+
+async function removeTable(id) {
+  if (!state.db) {
+    state.tables = state.tables.filter(function (t) { return t.id !== id; });
+    saveLocal(); render(); return;
+  }
+  try { await state.db.collection("tables").doc(id).delete(); }
+  catch (err) { toast("Could not delete table (" + (err && err.code ? err.code : "unknown") + ")"); }
+}
+
+function readOnly() { return state.canWrite === false; }
+
+/* ================================ views ================================ */
+
+function renderWho() {
+  var dot = $("#who .dot"), text = $("#who-text");
+  if (!state.ready) { text.textContent = "Connecting"; return; }
+  if (state.persistent) {
+    dot.className = "dot";
+    text.textContent = readOnly() ? "Read only" : "Synced";
+  } else {
+    dot.className = "dot dot--off";
+    text.textContent = "This device only";
+  }
+}
+
+function statsFor(reviews) {
+  var open = reviews.filter(function (r) { return r.status === "open"; });
+  var risky = reviews.filter(function (r) { return r.verdict === "critical" || r.verdict === "high"; });
+  var avoided = reviews
+    .filter(function (r) { return r.status === "shipped"; })
+    .reduce(function (a, r) { return a + (r.blockedSeconds || 0); }, 0);
+  return { total: reviews.length, open: open.length, risky: risky.length, avoided: avoided };
+}
+
+function viewReviews() {
+  var s = statsFor(state.reviews);
+  var filtered = state.reviews.filter(function (r) {
+    if (state.filter !== "all" && r.status !== state.filter) return false;
+    if (state.search) {
+      var hay = ((r.title || "") + " " + (r.tableName || "") + " " + (r.sql || "")).toLowerCase();
+      if (hay.indexOf(state.search.toLowerCase()) === -1) return false;
+    }
+    return true;
+  });
+
+  var body;
+  if (state.loadingReviews) {
+    body = '<div class="rows">' +
+      [0, 1, 2].map(function () { return '<div class="skeleton" style="height:84px"></div>'; }).join("") + "</div>";
+  } else if (!state.reviews.length) {
+    body = '<div class="state">' +
+      "<h3>No reviews yet</h3>" +
+      "<p>Paste a migration and Lock Queue will tell you which lock each statement takes, how long it blocks a live table, and how to rewrite the dangerous ones.</p>" +
+      '<a class="btn btn--primary" href="#/new">Review a migration</a></div>';
+  } else if (!filtered.length) {
+    body = '<div class="state"><h3>Nothing matches</h3><p>No review matches that filter and search. Clear them to see all ' + state.reviews.length + '.</p>' +
+      '<button class="btn" type="button" data-act="clear-filters">Clear filters</button></div>';
+  } else {
+    body = '<div class="rows">' + filtered.map(function (r) {
+      return '<article class="card row-card" data-act="open" data-id="' + esc(r.id) + '" tabindex="0" role="link" aria-label="Open review ' + esc(r.title) + '">' +
+        '<div class="row-card__main">' +
+          '<div class="row-card__title"><h3>' + esc(r.title || "Untitled migration") + "</h3>" +
+            '<span class="pill pill--' + esc(r.verdict) + '">' + esc(VERDICT_LABEL[r.verdict] || r.verdict) + "</span></div>" +
+          '<div class="row-card__meta">' +
+            "<span>" + esc(r.tableName || "no table set") + "</span>" +
+            "<span>" + fmtRows(r.rows) + " rows</span>" +
+            "<span>blocks " + esc(r.blockedFor || "—") + "</span>" +
+            "<span>" + relTime(r.createdAt) + "</span>" +
+          "</div>" +
+        "</div>" +
+        '<div class="row-card__right"><span class="pill pill--' + esc(r.status || "open") + '">' + esc(r.status || "open") + "</span></div>" +
+      "</article>";
+    }).join("") + "</div>";
+  }
+
+  return '<div class="page">' +
+    '<div class="page__head"><div>' +
+      '<p class="eyebrow">Migration safety</p>' +
+      '<h1 class="page__title">Reviews</h1>' +
+      '<p class="page__kicker">Every migration checked here, with what it would do to a live table.</p>' +
+    "</div>" +
+    '<a class="btn btn--primary" href="#/new">New review</a></div>' +
+
+    (state.persistent ? "" :
+      '<div class="banner"><strong>Saved on this device only.</strong> Sign in to the workspace to sync reviews across devices and with your team.</div>') +
+    (readOnly() ? '<div class="banner"><strong>Read-only access.</strong> You can review migrations, but saving is disabled for your role.</div>' : "") +
+
+    '<div class="stats">' +
+      '<div class="card stat"><span class="stat__value">' + s.total + '</span><span class="stat__label">Reviews</span><span class="stat__detail">Migrations checked in this workspace</span></div>' +
+      '<div class="card stat"><span class="stat__value">' + s.open + '</span><span class="stat__label">Open</span><span class="stat__detail">Reviewed but not yet shipped or dismissed</span></div>' +
+      '<div class="card stat"><span class="stat__value">' + s.risky + '</span><span class="stat__label">Flagged risky</span><span class="stat__detail">Verdict of risky or do-not-run</span></div>' +
+      '<div class="card stat"><span class="stat__value">' +
+        (s.avoided > 0 ? describeDuration(s.avoided).replace("about ", "") : "&mdash;") +
+        '</span><span class="stat__label">Blocking avoided</span><span class="stat__detail">Across shipped reviews, had they run as written</span></div>' +
+    "</div>" +
+
+    '<div class="toolbar">' +
+      '<input class="input" type="search" id="search" placeholder="Search title, table or SQL" value="' + esc(state.search) + '" aria-label="Search reviews">' +
+      '<div class="seg" role="group" aria-label="Filter by status">' +
+        ["all", "open", "shipped", "dismissed"].map(function (f) {
+          return '<button type="button" data-act="filter" data-filter="' + f + '" aria-pressed="' + (state.filter === f) + '">' + f + "</button>";
+        }).join("") +
+      "</div>" +
+    "</div>" + body + "</div>";
+}
+
+function viewNew() {
+  var d = state.draft;
+  var result = d.sql.trim() ? analyze(d.sql, { rows: Number(d.rows) || 0 }) : null;
+
+  var preview = "";
+  if (result) {
+    preview = '<div class="card" style="display:grid;gap:var(--sp-4)">' +
+      '<div><span class="pill pill--' + result.verdict + '">' + esc(VERDICT_LABEL[result.verdict]) + "</span></div>" +
+      '<dl class="kv">' +
+        "<div><dt>Table blocked</dt><dd>" + esc(result.blockedFor) + "</dd></div>" +
+        "<div><dt>Blocking statements</dt><dd>" + result.blockingCount + "</dd></div>" +
+        "<div><dt>Strongest lock</dt><dd class=\"mono\" style=\"font-size:var(--fs-xs)\">" + esc(result.worstLock || "none") + "</dd></div>" +
+        "<div><dt>Statements</dt><dd>" + result.statements.length + "</dd></div>" +
+      "</dl>" +
+      (result.script.length
+        ? '<div style="display:grid;gap:var(--sp-2)">' + result.script.map(function (f) {
+            return '<p class="finding__why"><span class="pill pill--' + f.severity + '">' + f.severity + "</span> " + esc(f.title) + "</p>";
+          }).join("") + "</div>"
+        : "") +
+      "</div>";
+  } else {
+    preview = '<div class="state" style="padding:var(--sp-6)"><h3>Nothing to analyse yet</h3><p>Paste a migration on the left. The verdict updates as you type.</p></div>';
+  }
+
+  var tableOptions = ['<option value="">Custom row count</option>'].concat(state.tables.map(function (t) {
+    return '<option value="' + esc(t.id) + '"' + (d.table === t.id ? " selected" : "") + ">" + esc(t.name) + " (" + fmtRows(t.rows) + ")</option>";
+  })).join("");
+
+  return '<div class="page">' +
+    '<div class="page__head"><div>' +
+      '<p class="eyebrow">New</p>' +
+      '<h1 class="page__title">Review a migration</h1>' +
+      '<p class="page__kicker">Paste the SQL. Pick the table it touches so the duration estimates use a real row count.</p>' +
+    "</div>" +
+    '<a class="btn btn--ghost" href="#/reviews">Cancel</a></div>' +
+
+    '<div class="detail">' +
+      '<div style="display:grid;gap:var(--sp-4)">' +
+        '<div class="field"><label for="title">Title</label>' +
+          '<input class="input" id="title" placeholder="e.g. add placed_at to orders" value="' + esc(d.title) + '"></div>' +
+        '<div class="field"><label for="sql">Migration SQL</label>' +
+          '<textarea class="textarea" id="sql" spellcheck="false" placeholder="BEGIN;&#10;ALTER TABLE ...">' + esc(d.sql) + "</textarea></div>" +
+      "</div>" +
+
+      '<div class="sticky-side">' +
+        '<div class="card" style="display:grid;gap:var(--sp-4)">' +
+          '<div class="field"><label for="table">Table</label>' +
+            '<select class="select" id="table">' + tableOptions + "</select></div>" +
+          '<div class="field"><label for="rows">Rows</label>' +
+            '<input class="input mono" id="rows" type="number" min="0" step="100000" value="' + esc(d.rows) + '"></div>' +
+          '<button class="btn btn--primary" type="button" data-act="save-review"' + (readOnly() ? " disabled" : "") + '>Save review</button>' +
+          (readOnly() ? '<p class="fix__note">Saving is disabled for your role.</p>' : "") +
+        "</div>" +
+        preview +
+      "</div>" +
+    "</div></div>";
+}
+
+function renderStatementCard(s) {
+  var badges = "";
+  if (s.lock) badges += '<span class="tag">' + esc(s.lock) + "</span>";
+  if (s.work && s.work !== "none" && s.work !== "catalog") badges += '<span class="tag">' + esc(s.work) + "</span>";
+  if (s.seconds) badges += '<span class="tag">' + esc(s.duration) + "</span>";
+
+  return '<article class="card finding" data-sev="' + s.severity + '">' +
+    '<div class="finding__head"><h4>' + esc(s.title) + "</h4>" +
+      '<span class="pill pill--' + s.severity + '">' + s.severity + "</span>" +
+      '<span class="tag">line ' + s.line + "</span></div>" +
+    '<div style="display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-bottom:var(--sp-3)">' + badges + "</div>" +
+    '<div class="sql-block" style="max-height:8rem">' + esc(s.raw) + "</div>" +
+    (s.mechanism ? '<p class="finding__why" style="margin-top:var(--sp-3)">' + esc(s.mechanism) + "</p>" : "") +
+    (s.holdsLock ? '<p class="finding__blocks">Blocks <b>' + esc(s.holdsLock.blocks) + "</b>. " + esc(s.holdsLock.note) + "</p>" : "") +
+    (s.fix ? '<div class="fix"><div class="fix__head"><h5>' + esc(s.fix.title) + "</h5>" +
+      '<button class="btn btn--sm" type="button" data-act="copy" data-copy="' + esc(s.fix.sql) + '">Copy</button></div>' +
+      "<pre>" + esc(s.fix.sql) + "</pre>" +
+      (s.fix.note ? '<p class="fix__note">' + esc(s.fix.note) + "</p>" : "") + "</div>" : "") +
+    "</article>";
+}
+
+function viewDetail(id) {
+  var r = state.reviews.filter(function (x) { return x.id === id; })[0];
+  if (!r) {
+    if (state.loadingReviews) return '<div class="page"><div class="skeleton" style="height:220px"></div></div>';
+    return '<div class="page"><div class="state"><h3>Review not found</h3>' +
+      "<p>It may have been deleted, or the link points at another workspace.</p>" +
+      '<a class="btn" href="#/reviews">Back to reviews</a></div></div>';
+  }
+
+  var result = analyze(r.sql || "", { rows: Number(r.rows) || 0 });
+  var judged = result.statements.filter(function (s) { return s.severity !== "info"; });
+
+  return '<div class="page">' +
+    '<div class="page__head"><div>' +
+      '<p class="eyebrow"><a href="#/reviews" style="color:inherit">&larr; Reviews</a></p>' +
+      '<h1 class="page__title">' + esc(r.title || "Untitled migration") + "</h1>" +
+      '<p class="page__kicker">' + esc(r.tableName || "No table set") + " &middot; " + fmtRows(r.rows) + " rows &middot; reviewed " + relTime(r.createdAt) + "</p>" +
+    "</div>" +
+    '<div style="display:flex;gap:var(--sp-2);flex-wrap:wrap">' +
+      '<button class="btn btn--sm" type="button" data-act="status" data-id="' + esc(r.id) + '" data-status="shipped"' + (readOnly() ? " disabled" : "") + '>Mark shipped</button>' +
+      '<button class="btn btn--sm" type="button" data-act="status" data-id="' + esc(r.id) + '" data-status="dismissed"' + (readOnly() ? " disabled" : "") + '>Dismiss</button>' +
+      '<button class="btn btn--sm btn--danger" type="button" data-act="delete" data-id="' + esc(r.id) + '"' + (readOnly() ? " disabled" : "") + '>Delete</button>' +
+    "</div></div>" +
+
+    '<div class="detail">' +
+      '<div style="display:grid;gap:var(--sp-4)">' +
+        (result.script.length ? result.script.map(function (f) {
+          return '<article class="card finding" data-sev="' + f.severity + '">' +
+            '<div class="finding__head"><h4>' + esc(f.title) + '</h4><span class="pill pill--' + f.severity + '">' + f.severity + "</span></div>" +
+            '<p class="finding__why">' + esc(f.detail) + "</p>" +
+            (f.fix ? '<div class="fix"><div class="fix__head"><h5>What to do instead</h5>' +
+              '<button class="btn btn--sm" type="button" data-act="copy" data-copy="' + esc(f.fix) + '">Copy</button></div><pre>' + esc(f.fix) + "</pre></div>" : "") +
+            "</article>";
+        }).join("") : "") +
+        judged.map(renderStatementCard).join("") +
+      "</div>" +
+
+      '<div class="sticky-side">' +
+        '<div class="card" style="display:grid;gap:var(--sp-4)">' +
+          '<div><span class="pill pill--' + result.verdict + '">' + esc(VERDICT_LABEL[result.verdict]) + "</span> " +
+            '<span class="pill pill--' + esc(r.status || "open") + '">' + esc(r.status || "open") + "</span></div>" +
+          '<dl class="kv">' +
+            "<div><dt>Table blocked</dt><dd>" + esc(result.blockedFor) + "</dd></div>" +
+            "<div><dt>Blocking</dt><dd>" + result.blockingCount + " of " + result.statements.length + "</dd></div>" +
+            "<div><dt>Strongest lock</dt><dd class=\"mono\" style=\"font-size:var(--fs-xs)\">" + esc(result.worstLock || "none") + "</dd></div>" +
+            "<div><dt>Row count used</dt><dd>" + fmtRows(r.rows) + "</dd></div>" +
+          "</dl>" +
+          '<button class="btn btn--primary" type="button" data-act="copy-safe" data-id="' + esc(r.id) + '">Copy the safe migration</button>' +
+        "</div>" +
+        '<div class="card"><h4 style="font-size:var(--fs-sm);margin-bottom:var(--sp-3)">Migration as reviewed</h4>' +
+          '<div class="sql-block">' + esc(r.sql || "") + "</div></div>" +
+      "</div>" +
+    "</div></div>";
+}
+
+function viewTables() {
+  var body;
+  if (state.loadingTables) {
+    body = '<div class="skeleton" style="height:180px"></div>';
+  } else if (!state.tables.length) {
+    body = '<div class="state"><h3>No tables yet</h3>' +
+      "<p>Add the tables your migrations touch with their row counts. Reviews then estimate durations from real numbers instead of a guess.</p></div>";
+  } else {
+    body = '<div class="table-wrap"><table><thead><tr>' +
+      "<th>Table</th><th class=\"num\" style=\"text-align:right\">Rows</th><th>Updated</th><th></th>" +
+      "</tr></thead><tbody>" +
+      state.tables.map(function (t) {
+        return "<tr><td class=\"mono\">" + esc(t.name) + "</td>" +
+          '<td class="num">' + fmtRows(t.rows) + "</td>" +
+          '<td style="color:var(--text-faint);font-size:var(--fs-xs)">' + relTime(t.updatedAt) + "</td>" +
+          '<td style="text-align:right"><button class="btn btn--sm btn--danger" type="button" data-act="del-table" data-id="' + esc(t.id) + '"' + (readOnly() ? " disabled" : "") + ">Remove</button></td></tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+
+  return '<div class="page">' +
+    '<div class="page__head"><div>' +
+      '<p class="eyebrow">Reference</p>' +
+      '<h1 class="page__title">Tables</h1>' +
+      '<p class="page__kicker">Row counts used to estimate how long a statement holds its lock. Run <span class="mono">SELECT reltuples::bigint FROM pg_class WHERE relname = \'orders\';</span> for a fast estimate.</p>' +
+    "</div></div>" +
+
+    '<div class="card" style="margin-bottom:var(--sp-5)">' +
+      '<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:var(--sp-3);align-items:end">' +
+        '<div class="field"><label for="t-name">Table name</label><input class="input mono" id="t-name" placeholder="public.orders"></div>' +
+        '<div class="field"><label for="t-rows">Rows</label><input class="input mono" id="t-rows" type="number" min="0" step="100000" placeholder="12000000"></div>' +
+        '<button class="btn btn--primary" type="button" data-act="add-table"' + (readOnly() ? " disabled" : "") + ">Add table</button>" +
+      "</div></div>" + body + "</div>";
+}
+
+/* ================================ router ================================ */
+
+function route() {
+  var h = location.hash || "#/reviews";
+  var m = h.match(/^#\/review\/(.+)$/);
+  if (m) return { name: "detail", id: decodeURIComponent(m[1]) };
+  if (h.indexOf("#/new") === 0) return { name: "new" };
+  if (h.indexOf("#/tables") === 0) return { name: "tables" };
+  return { name: "reviews" };
+}
+
+function render() {
+  var r = route();
+  var html;
+  if (r.name === "new") html = viewNew();
+  else if (r.name === "tables") html = viewTables();
+  else if (r.name === "detail") html = viewDetail(r.id);
+  else html = viewReviews();
+
+  $("#main").innerHTML = html;
+
+  var active = r.name === "detail" ? "reviews" : r.name;
+  Array.prototype.forEach.call(document.querySelectorAll(".nav__link"), function (a) {
+    if (a.dataset.view === active) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  renderWho();
+}
+
+/* ================================ events ================================ */
+
+window.addEventListener("hashchange", function () { render(); window.scrollTo(0, 0); });
+
+document.addEventListener("input", function (ev) {
+  var t = ev.target;
+  if (t.id === "search") { state.search = t.value; var p = t.selectionStart; render(); var el = $("#search"); if (el) { el.focus(); el.setSelectionRange(p, p); } return; }
+  if (t.id === "title") { state.draft.title = t.value; return; }
+  if (t.id === "rows") { state.draft.rows = t.value; schedulePreview(); return; }
+  if (t.id === "sql") { state.draft.sql = t.value; schedulePreview(); return; }
+});
+
+var previewTimer = null;
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(function () {
+    if (route().name !== "new") return;
+    var sqlEl = $("#sql"), pos = sqlEl ? sqlEl.selectionStart : null, focused = document.activeElement && document.activeElement.id;
+    render();
+    if (focused) {
+      var again = document.getElementById(focused);
+      if (again) { again.focus(); if (pos !== null && again.setSelectionRange && again.type !== "number") again.setSelectionRange(pos, pos); }
+    }
+  }, 220);
+}
+
+document.addEventListener("change", function (ev) {
+  if (ev.target.id === "table") {
+    var id = ev.target.value;
+    state.draft.table = id;
+    var t = state.tables.filter(function (x) { return x.id === id; })[0];
+    if (t) state.draft.rows = t.rows;
+    render();
+  }
+});
+
+document.addEventListener("click", function (ev) {
+  var el = ev.target.closest("[data-act]");
+  if (!el) return;
+  var act = el.dataset.act;
+
+  if (act === "filter") { state.filter = el.dataset.filter; render(); return; }
+  if (act === "clear-filters") { state.filter = "all"; state.search = ""; render(); return; }
+  if (act === "open") { location.hash = "#/review/" + encodeURIComponent(el.dataset.id); return; }
+
+  if (act === "copy") { copy(el.dataset.copy); return; }
+
+  if (act === "save-review") { doSaveReview(); return; }
+
+  if (act === "status") {
+    patchReview(el.dataset.id, { status: el.dataset.status });
+    toast("Marked " + el.dataset.status + ".");
+    return;
+  }
+
+  if (act === "delete") {
+    if (el.dataset.confirm === "1") { removeReview(el.dataset.id); location.hash = "#/reviews"; toast("Review deleted."); return; }
+    el.dataset.confirm = "1";
+    el.textContent = "Click again to delete";
+    setTimeout(function () { if (el.isConnected) { el.dataset.confirm = ""; el.textContent = "Delete"; } }, 4000);
+    return;
+  }
+
+  if (act === "copy-safe") {
+    var r = state.reviews.filter(function (x) { return x.id === el.dataset.id; })[0];
+    if (r) copy(safeScript(r), "Safe migration copied.");
+    return;
+  }
+
+  if (act === "add-table") {
+    var name = ($("#t-name") || {}).value, rows = Number(($("#t-rows") || {}).value);
+    if (!name || !name.trim()) { toast("Give the table a name."); return; }
+    if (!isFinite(rows) || rows < 0) { toast("Row count must be a number."); return; }
+    saveTable({ id: name.trim().replace(/[^A-Za-z0-9_.~:@+-]/g, "_"), name: name.trim(), rows: rows, updatedAt: Date.now() });
+    toast("Table saved.");
+    return;
+  }
+
+  if (act === "del-table") { removeTable(el.dataset.id); toast("Table removed."); return; }
+});
+
+document.addEventListener("keydown", function (ev) {
+  if (ev.key !== "Enter" && ev.key !== " ") return;
+  var el = ev.target.closest('[data-act="open"]');
+  if (!el) return;
+  ev.preventDefault();
+  location.hash = "#/review/" + encodeURIComponent(el.dataset.id);
+});
+
+async function doSaveReview() {
+  var d = state.draft;
+  if (!d.sql.trim()) { toast("Paste a migration first."); return; }
+  var rows = Number(d.rows) || 0;
+  var result = analyze(d.sql, { rows: rows });
+  var t = state.tables.filter(function (x) { return x.id === d.table; })[0];
+
+  var doc = {
+    id: uid(),
+    title: d.title.trim() || (result.statements[0] ? result.statements[0].op : "Migration"),
+    sql: d.sql,
+    tableName: t ? t.name : (result.statements.map(function (s) { return s.table; }).filter(Boolean)[0] || ""),
+    rows: rows,
+    verdict: result.verdict,
+    blockedSeconds: result.blockedSeconds,
+    blockedFor: result.blockedFor,
+    blockingCount: result.blockingCount,
+    statementCount: result.statements.length,
+    status: "open",
+    createdAt: Date.now()
+  };
+
+  var okSave = await saveReview(doc);
+  if (okSave === false) return;
+  state.draft = { title: "", sql: "", table: "", rows: rows };
+  toast("Review saved.");
+  location.hash = "#/review/" + encodeURIComponent(doc.id);
+}
+
+function safeScript(r) {
+  var result = analyze(r.sql || "", { rows: Number(r.rows) || 0 });
+  var out = ["-- Rewritten by Lock Queue.",
+             "-- Statements with a safer equivalent were replaced; the rest are unchanged.",
+             "-- CONCURRENTLY statements must run outside any transaction block.", ""];
+  if (!result.statements.some(function (s) { return s.op === "SET lock_timeout"; })) {
+    out.push("SET lock_timeout = '3s';", "SET statement_timeout = '30s';", "");
+  }
+  result.statements.forEach(function (s) {
+    if (s.op === "BEGIN" || s.op === "COMMIT" || s.op === "ROLLBACK") return;
+    if (s.fix) { out.push("-- was: " + s.raw.split("\n")[0].slice(0, 70)); out.push(s.fix.sql, ""); }
+    else out.push(s.raw.replace(/;?\s*$/, "") + ";", "");
+  });
+  return out.join("\n");
+}
+
+function copy(text, msg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      function () { toast(msg || "Copied."); },
+      function () { toast("Copy blocked here — select the text instead."); }
+    );
+  } else toast("Copy blocked here — select the text instead.");
+}
+
+/* ================================= boot ================================= */
+
+render();          // first paint: designed loading state, before any capability answers
+connect();
+})();
+</script>
